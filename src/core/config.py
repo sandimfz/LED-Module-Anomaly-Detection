@@ -21,7 +21,7 @@ class Config:
     """
 
     BASE_DIR: Path = Path("/home/alen/apps/led")
-    DATASET_ROOT: Path = BASE_DIR / "led_dataset"
+    DATASET_ROOT: Path = BASE_DIR / "dataset"
     MODELS_ROOT: Path = BASE_DIR / "models"
     OUTPUT_ROOT: Path = BASE_DIR / "output"
 
