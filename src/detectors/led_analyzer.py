@@ -24,6 +24,30 @@ from src.core.types import AnomalyLevel, DetectionResult, LocationConfig
 from src.detectors.base import BaseDetector
 
 
+def row_means_safe(y: int, gray: np.ndarray, led_mask: np.ndarray) -> float:
+    """Hitung mean brightness baris y secara aman."""
+    h, w = gray.shape
+    if y < 0 or y >= h:
+        return 999.0
+    row = gray[y, :]
+    mask = led_mask[y, :] > 0
+    if np.sum(mask) == 0:
+        return 999.0
+    return float(np.mean(row[mask]))
+
+
+def col_means_safe(x: int, gray: np.ndarray, led_mask: np.ndarray) -> float:
+    """Hitung mean brightness kolom x secara aman."""
+    h, w = gray.shape
+    if x < 0 or x >= w:
+        return 999.0
+    col = gray[:, x]
+    mask = led_mask[:, x] > 0
+    if np.sum(mask) == 0:
+        return 999.0
+    return float(np.mean(col[mask]))
+
+
 @dataclass
 class LEDPanelInfo:
     """Informasi panel LED yang terdeteksi.
@@ -338,9 +362,13 @@ class LEDAnalyzer(BaseDetector):
     ) -> np.ndarray:
         """Buat mask untuk area LED content.
 
-        Pendekatan sederhana:
-        1. Threshold brightness + saturation
-        2. Morphological cleanup
+        Perbedaan LED content vs bezel:
+        - LED content: ada konten (text, gambar, warna)
+        - Bezel: solid color uniform (hijau, biru, atau hitam)
+
+        Pendekatan:
+        1. Brightness + saturation threshold
+        2. Exclude area dengan variance SANGAT rendah (solid color = bezel)
         3. Ambil connected component terbesar
 
         Args:
@@ -352,18 +380,33 @@ class LEDAnalyzer(BaseDetector):
         Returns:
             Binary mask (1 = LED content, 0 = non-LED).
         """
-        # Threshold untuk LED content
+        # Step 1: Brightness + saturation threshold
         value_channel = hsv[:, :, 2]
         sat_channel = hsv[:, :, 1]
 
         bright_mask = value_channel > 100
         sat_mask = sat_channel > 40
+        basic_mask = (bright_mask & sat_mask).astype(np.uint8)
 
-        led_mask = (bright_mask & sat_mask).astype(np.uint8)
+        # Step 2: Local variance - EXCLUDE solid color (bezel)
+        gray_float = gray.astype(np.float32)
+        kernel_size = 15
+        kernel = np.ones((kernel_size, kernel_size), np.float32) / (kernel_size ** 2)
+        local_mean = cv2.filter2D(gray_float, -1, kernel)
+        local_sq_mean = cv2.filter2D(gray_float ** 2, -1, kernel)
+        local_var = np.maximum(local_sq_mean - local_mean ** 2, 0)
+
+        # Bezel = variance SANGAT rendah (< 3 = solid color)
+        # LED content = variance lebih tinggi (> 3)
+        solid_mask = (local_var < 3.0).astype(np.uint8)
+
+        # Exclude solid color areas dari basic mask
+        # led_mask = basic_mask TAPI BUKAN solid color
+        led_mask = (basic_mask & (1 - solid_mask)).astype(np.uint8)
 
         # Morphological cleanup
-        kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
-        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
 
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel_close)
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel_open)
@@ -488,8 +531,10 @@ class LEDAnalyzer(BaseDetector):
     ) -> List[LEDAnomaly]:
         """Deteksi area flat/rata tanpa konten (no content area).
 
-        Area yang memiliki variance sangat rendah menandakan
-        tidak ada konten yang ditampilkan (blank/flat).
+        Hanya deteksi area yang:
+        1. Di dalam LED content mask
+        2. Variance SANGAT rendah (threshold ketat)
+        3. Brightness cukup terang (bukan area gelap normal)
 
         Args:
             gray: Gambar grayscale area LED.
@@ -502,37 +547,39 @@ class LEDAnalyzer(BaseDetector):
         anomalies: List[LEDAnomaly] = []
         h, w = gray.shape
 
-        # Buat mask yang HANYA mencakup area di dalam panel bounding box
-        # Ini memastikan tidak ada deteksi di luar LED
-        panel_mask = np.zeros_like(led_mask)
-        # panel.x dan panel.y adalah koordinat relatif terhadap led_region
-        panel_mask[0:h, 0:w] = 1  # Karena led_region sudah di-crop ke panel
+        # Hitung statistics dari LED content saja
+        led_pixels = gray[led_mask > 0]
+        if len(led_pixels) == 0:
+            return []
 
-        # Gabungkan dengan led_mask
-        combined_mask = (led_mask > 0) & (panel_mask > 0)
+        led_mean = float(np.mean(led_pixels))
+        led_std = float(np.std(led_pixels))
 
         # Bagi menjadi blok-blok dan cek variance
         block_size = 64
-        flat_threshold = 15.0  # Variance threshold untuk dianggap "flat"
+        # Threshold KETAT: variance harus SANGAT rendah untuk dianggap "flat"
+        # Gunakan 10% dari std^2 LED sebagai threshold
+        flat_threshold = max(led_std * led_std * 0.1, 10.0)
 
-        for by in range(0, h - block_size, block_size // 2):
-            for bx in range(0, w - block_size, block_size // 2):
+        for by in range(0, h - block_size, block_size):
+            for bx in range(0, w - block_size, block_size):
                 # Cek apakah block ini di dalam area LED
-                block_mask = combined_mask[by : by + block_size, bx : bx + block_size]
+                block_mask = led_mask[by : by + block_size, bx : bx + block_size]
                 led_ratio = np.mean(block_mask)
 
-                # Hanya analisis jika > 70% block adalah LED content
-                if led_ratio < 0.7:
+                # Hanya analisis jika > 80% block adalah LED content
+                if led_ratio < 0.8:
                     continue
 
                 block = gray[by : by + block_size, bx : bx + block_size]
                 block_var = float(np.var(block))
+                block_mean = float(np.mean(block))
 
                 # Cek apakah block ini flat
                 if block_var < flat_threshold:
-                    block_mean = np.mean(block)
-                    if block_mean > panel.mean_brightness * 0.3:
-                        # Area terang tapi flat = no content
+                    # Block harus TERANG (bukan area gelap normal)
+                    # Dan brightness harus mirip dengan mean LED
+                    if block_mean > led_mean * 0.5 and block_mean < led_mean * 2.0:
                         severity = 1.0 - (block_var / flat_threshold)
                         anomalies.append(
                             LEDAnomaly(
@@ -591,7 +638,7 @@ class LEDAnalyzer(BaseDetector):
                     used[j] = True
 
             # Merge group
-            if len(group) >= 3:  # Minimal 3 blocks untuk dianggap anomali
+            if len(group) >= 4:  # Minimal 4 blocks untuk dianggap anomali
                 min_x = min(a.x for a in group)
                 min_y = min(a.y for a in group)
                 max_x = max(a.x + a.width for a in group)
@@ -620,10 +667,8 @@ class LEDAnalyzer(BaseDetector):
     ) -> List[LEDAnomaly]:
         """Deteksi line defects (garis horizontal/vertical).
 
-        Metode yang lebih akurat:
-        1. Gunakan profiling untuk menemukan garis
-        2. Filter berdasarkan intensitas dan panjang
-        3. Hanya deteksi di dalam LED content mask
+        Hanya report garis yang BENAR-BENAR gelap di area LED content.
+        Width/height mengikuti area gelap aktual, bukan seluruh panel.
 
         Args:
             gray: Gambar grayscale area LED.
@@ -636,104 +681,83 @@ class LEDAnalyzer(BaseDetector):
         anomalies: List[LEDAnomaly] = []
         h, w = gray.shape
 
-        # Hitung profil brightness HANYA di area LED
-        masked_gray = gray.astype(float) * led_mask
-
-        # Hitung row dan column profiles
-        row_counts = np.sum(led_mask, axis=1)
-        col_counts = np.sum(led_mask, axis=0)
-
-        # Hindari division by zero
-        row_counts[row_counts == 0] = 1
-        col_counts[col_counts == 0] = 1
-
-        row_means = np.sum(masked_gray, axis=1) / row_counts
-        col_means = np.sum(masked_gray, axis=0) / col_counts
-
-        # Hitung statistics dari area LED
-        led_row_means = row_means[row_counts > w * 0.3]
-        led_col_means = col_means[col_counts > h * 0.3]
-
-        if len(led_row_means) == 0 or len(led_col_means) == 0:
+        # Hitung statistics dari pixel LED saja
+        led_pixels = gray[led_mask > 0]
+        if len(led_pixels) == 0:
             return []
 
-        # Threshold: garis jika < mean - 1.5*std (lebih sensitif)
-        row_threshold = np.mean(led_row_means) - np.std(led_row_means) * 1.5
-        col_threshold = np.mean(led_col_means) - np.std(led_col_means) * 1.5
+        led_mean = float(np.mean(led_pixels))
+        led_std = float(np.std(led_pixels))
+
+        # Threshold: garis jika < mean - 2*std
+        threshold = max(led_mean - led_std * 2, 30)
 
         # Deteksi garis horizontal
-        for i in range(2, h - 2):
-            # Cek apakah baris ini di area LED (minimal 30% width)
-            if row_counts[i] < w * 0.3:
-                continue
+        for y in range(2, h - 2):
+            row = gray[y, :]
+            row_led = led_mask[y, :] > 0
 
-            # Cek apakah baris ini lebih gelap dari threshold
-            if row_means[i] < row_threshold:
-                # Cek apakah ini local minimum (garis, bukan area luas)
-                if (
-                    row_means[i] < row_means[i - 1]
-                    and row_means[i] < row_means[i + 1]
-                ):
-                    # Hitung panjang garis horizontal
-                    line_length = 0
-                    for j in range(w):
-                        if led_mask[i, j] > 0 and gray[i, j] < row_threshold:
-                            line_length += 1
+            # Hitung berapa pixel di baris ini yang gelap DAN di area LED
+            dark_in_led = np.sum((row < threshold) & row_led)
+            total_led_in_row = np.sum(row_led)
 
-                    # Harus cukup panjang (> 30% width)
-                    if line_length > w * 0.3:
-                        severity = min(
-                            (row_threshold - row_means[i]) / (row_threshold + 1),
-                            1.0,
-                        )
-                        anomalies.append(
-                            LEDAnomaly(
-                                x=panel.x,
-                                y=panel.y + i,
-                                width=w,
-                                height=1,
-                                anomaly_type="line_defect",
-                                severity=severity,
-                                description=f"Horizontal line at row {i} (len={line_length})",
+            # Minimal 40% dari LED di baris ini harus gelap
+            if total_led_in_row > w * 0.3 and dark_in_led > total_led_in_row * 0.4:
+                # Cek local minimum
+                if row_means_safe(y, gray, led_mask) < row_means_safe(y - 1, gray, led_mask) \
+                   and row_means_safe(y, gray, led_mask) < row_means_safe(y + 1, gray, led_mask):
+                    # Hitung rentang horizontal garis gelap
+                    dark_cols = np.where((row < threshold) & row_led)[0]
+                    if len(dark_cols) > 0:
+                        x_start = dark_cols[0]
+                        x_end = dark_cols[-1]
+                        line_width = x_end - x_start
+
+                        # Garis harus cukup panjang (> 30% width)
+                        if line_width > w * 0.3:
+                            severity = min(dark_in_led / total_led_in_row, 1.0)
+                            anomalies.append(
+                                LEDAnomaly(
+                                    x=panel.x + x_start,
+                                    y=panel.y + y,
+                                    width=line_width,
+                                    height=1,
+                                    anomaly_type="line_defect",
+                                    severity=severity,
+                                    description=f"H-line at row {y} (len={line_width})",
+                                )
                             )
-                        )
 
         # Deteksi garis vertical
-        for i in range(2, w - 2):
-            # Cek apakah kolom ini di area LED (minimal 30% height)
-            if col_counts[i] < h * 0.3:
-                continue
+        for x in range(2, w - 2):
+            col = gray[:, x]
+            col_led = led_mask[:, x] > 0
 
-            # Cek apakah kolom ini lebih gelap dari threshold
-            if col_means[i] < col_threshold:
-                # Cek apakah ini local minimum
-                if (
-                    col_means[i] < col_means[i - 1]
-                    and col_means[i] < col_means[i + 1]
-                ):
-                    # Hitung panjang garis vertical
-                    line_length = 0
-                    for j in range(h):
-                        if led_mask[j, i] > 0 and gray[j, i] < col_threshold:
-                            line_length += 1
+            dark_in_led = np.sum((col < threshold) & col_led)
+            total_led_in_col = np.sum(col_led)
 
-                    # Harus cukup panjang (> 30% height)
-                    if line_length > h * 0.3:
-                        severity = min(
-                            (col_threshold - col_means[i]) / (col_threshold + 1),
-                            1.0,
-                        )
-                        anomalies.append(
-                            LEDAnomaly(
-                                x=panel.x + i,
-                                y=panel.y,
-                                width=1,
-                                height=h,
-                                anomaly_type="line_defect",
-                                severity=severity,
-                                description=f"Vertical line at col {i} (len={line_length})",
+            if total_led_in_col > h * 0.3 and dark_in_led > total_led_in_col * 0.4:
+                if col_means_safe(x, gray, led_mask) < col_means_safe(x - 1, gray, led_mask) \
+                   and col_means_safe(x, gray, led_mask) < col_means_safe(x + 1, gray, led_mask):
+                    dark_rows = np.where((col < threshold) & col_led)[0]
+                    if len(dark_rows) > 0:
+                        y_start = dark_rows[0]
+                        y_end = dark_rows[-1]
+                        line_height = y_end - y_start
+
+                        if line_height > h * 0.3:
+                            severity = min(dark_in_led / total_led_in_col, 1.0)
+                            anomalies.append(
+                                LEDAnomaly(
+                                    x=panel.x + x,
+                                    y=panel.y + y_start,
+                                    width=1,
+                                    height=line_height,
+                                    anomaly_type="line_defect",
+                                    severity=severity,
+                                    description=f"V-line at col {x} (len={line_height})",
+                                )
                             )
-                        )
 
         return anomalies
 
