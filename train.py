@@ -20,17 +20,21 @@ warnings.filterwarnings("ignore")
 from src.core.config import Config
 
 
-def main(location: str) -> None:
+def main(location: str, dataset_path: str | None = None) -> None:
     """Training PatchCore untuk lokasi tertentu.
 
     Args:
         location: Nama lokasi.
+        dataset_path: Custom dataset path (override default).
     """
     from anomalib.data import Folder
     from anomalib.engine import Engine
     from anomalib.models import Patchcore
 
-    data_dir = Config.get_dataset_path(location)
+    if dataset_path:
+        data_dir = Path(dataset_path)
+    else:
+        data_dir = Config.get_dataset_path(location)
     model_dir = Config.get_model_path(location)
 
     if not (data_dir / "good").exists():
@@ -94,5 +98,11 @@ if __name__ == "__main__":
         required=True,
         help="Nama lokasi (folder di led_dataset/)",
     )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default=None,
+        help="Custom dataset path (default: led_dataset/<location>)",
+    )
     args = parser.parse_args()
-    main(args.location)
+    main(args.location, args.dataset)
