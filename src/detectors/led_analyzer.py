@@ -158,12 +158,12 @@ class LEDAnalyzer(BaseDetector):
         )
 
     def _find_led_panel(self, image: np.ndarray) -> Optional[LEDPanelInfo]:
-        """Temukan panel LED menggunakan multi-criteria detection.
+        """Temukan panel LED menggunakan color-based detection.
 
-        Metode yang lebih akurat:
-        1. Gunakan edge detection untuk menemukan rectangular area
-        2. Kombinasikan brightness + saturation untuk validasi
-        3. Filter berdasarkan bentuk, ukuran, dan posisi
+        LED panel memiliki karakteristik:
+        1. Area terang dengan warna konsisten
+        2. Bentuk rectangular
+        3. Besar dan di posisi tengah/frame
 
         Args:
             image: Gambar BGR.
@@ -175,59 +175,80 @@ class LEDAnalyzer(BaseDetector):
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         h_img, w_img = gray.shape
 
-        # Step 1: Edge detection untuk menemukan rectangular area
-        edges = cv2.Canny(gray, 50, 150)
-        kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-        edges = cv2.dilate(edges, kernel_dilate, iterations=2)
+        # Step 1: Buat mask untuk area yang KEMUNGKINAN LED
+        # LED harus terang (value tinggi) dan berwarna (saturation tinggi)
+        # Threshold lebih tinggi untuk menghindari bezel gelap
+        value_channel = hsv[:, :, 2]
+        sat_channel = hsv[:, :, 1]
 
-        # Step 2: Cari kontur dari edges
+        # LED content: terang DAN berwarna
+        bright_mask = value_channel > 120
+        sat_mask = sat_channel > 40
+        led_mask = (bright_mask & sat_mask).astype(np.uint8)
+
+        # Step 2: Morphological cleanup
+        # Close untuk menghubungkan area terputus
+        kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25))
+        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel_close)
+
+        # Open untuk menghilangkan noise kecil
+        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel_open)
+
+        # Step 3: Cari kontur
         contours, _ = cv2.findContours(
-            edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            led_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
 
-        # Step 3: Filter kontur berdasarkan rectangularity
+        if not contours:
+            return None
+
+        # Step 4: Evaluate setiap kontur sebagai kandidat LED panel
         candidates = []
         for contour in contours:
             area = cv2.contourArea(contour)
+
+            # Filter area terlalu kecil
             if area < self.min_panel_area:
                 continue
 
             x, y, w, h = cv2.boundingRect(contour)
-            aspect_ratio = w / h if h > 0 else 0
 
-            # LED panel harus rectangular dan aspect ratio wajar
-            if not (0.3 < aspect_ratio < 5.0):
+            # Aspect ratio harus wajar untuk LED panel
+            aspect_ratio = w / h if h > 0 else 0
+            if not (0.4 < aspect_ratio < 4.0):
                 continue
 
-            # Hitung rectangularity (area kontur / area bounding rect)
+            # Hitung rectangularity
             rect_area = w * h
             if rect_area == 0:
                 continue
             rectangularity = area / rect_area
 
-            # Harus cukup rectangular (> 0.6)
-            if rectangularity < 0.6:
+            # Harus cukup rectangular (>0.5)
+            if rectangularity < 0.5:
                 continue
 
-            # Cek brightness dan saturation di dalam bounding box
+            # Analisis isi bounding box
             roi_gray = gray[y : y + h, x : x + w]
-            roi_sat = hsv[y : y + h, x : x + w, 1]
-            roi_val = hsv[y : y + h, x : x + w, 2]
+            roi_sat = sat_channel[y : y + h, x : x + w]
+            roi_val = value_channel[y : y + h, x : x + w]
 
             mean_brightness = np.mean(roi_gray)
             mean_saturation = np.mean(roi_sat)
             mean_value = np.mean(roi_val)
 
             # LED harus terang dan berwarna
-            if mean_brightness < 80 or mean_saturation < 40:
+            if mean_brightness < 90 or mean_saturation < 35:
                 continue
 
-            # Score berdasarkan multiple criteria
+            # Score: kombinasi ukuran, rectangularity, brightness, saturation
+            size_score = area / (h_img * w_img)
             score = (
-                rectangularity * 0.3
-                + (area / (h_img * w_img)) * 0.2
-                + (mean_brightness / 255.0) * 0.2
-                + (mean_saturation / 255.0) * 0.3
+                rectangularity * 0.25
+                + min(size_score * 2, 0.25)
+                + (mean_brightness / 255.0) * 0.25
+                + (mean_saturation / 255.0) * 0.25
             )
 
             candidates.append({
@@ -235,13 +256,13 @@ class LEDAnalyzer(BaseDetector):
                 "score": score,
                 "brightness": mean_brightness,
                 "saturation": mean_saturation,
+                "area": area,
             })
 
         if not candidates:
-            # Fallback: gunakan brightness + saturation mask
-            return self._find_led_panel_fallback(gray, hsv, h_img, w_img)
+            return None
 
-        # Ambil kandidat terbaik
+        # Step 5: Ambil kandidat TERBAIK (skor tertinggi)
         best = max(candidates, key=lambda c: c["score"])
 
         return LEDPanelInfo(
@@ -254,83 +275,6 @@ class LEDAnalyzer(BaseDetector):
             mean_saturation=float(best["saturation"]),
         )
 
-    def _find_led_panel_fallback(
-        self,
-        gray: np.ndarray,
-        hsv: np.ndarray,
-        h_img: int,
-        w_img: int,
-    ) -> Optional[LEDPanelInfo]:
-        """Fallback method untuk mencari LED panel.
-
-        Args:
-            gray: Grayscale image.
-            hsv: HSV image.
-            h_img: Height image.
-            w_img: Width image.
-
-        Returns:
-            LEDPanelInfo atau None.
-        """
-        # Gunakan brightness + saturation mask
-        bright_mask = gray > 100
-        sat_mask = hsv[:, :, 1] > 50
-        led_mask = (bright_mask & sat_mask).astype(np.uint8)
-
-        # Morphological cleanup
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 30))
-        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel)
-        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel)
-
-        # Dilate untuk connect area
-        led_mask = cv2.dilate(led_mask, kernel, iterations=2)
-
-        # Cari kontur
-        contours, _ = cv2.findContours(
-            led_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-
-        if not contours:
-            return None
-
-        # Ambil kontur terbesar
-        largest_contour = max(contours, key=cv2.contourArea)
-        largest_area = cv2.contourArea(largest_contour)
-
-        if largest_area < self.min_panel_area:
-            return None
-
-        x, y, w, h = cv2.boundingRect(largest_contour)
-        aspect_ratio = w / h if h > 0 else 0
-
-        if not (0.3 < aspect_ratio < 5.0):
-            return None
-
-        roi_gray = gray[y : y + h, x : x + w]
-        roi_sat = hsv[y : y + h, x : x + w, 1]
-
-        mean_brightness = np.mean(roi_gray)
-        mean_saturation = np.mean(roi_sat)
-
-        if mean_brightness < 80:
-            return None
-
-        score = (
-            (largest_area / (h_img * w_img)) * 0.3
-            + (mean_brightness / 255.0) * 0.3
-            + (mean_saturation / 255.0) * 0.4
-        )
-
-        return LEDPanelInfo(
-            x=x,
-            y=y,
-            width=w,
-            height=h,
-            confidence=min(score * 2, 1.0),
-            mean_brightness=float(mean_brightness),
-            mean_saturation=float(mean_saturation),
-        )
-
     def _analyze_led_content(
         self,
         led_region: np.ndarray,
@@ -338,10 +282,10 @@ class LEDAnalyzer(BaseDetector):
     ) -> List[LEDAnomaly]:
         """Analisis konten di dalam area LED.
 
-        Metode yang lebih akurat:
-        1. Buat mask LED content menggunakan color consistency
-        2. Gunakan texture analysis untuk membedakan LED content vs bezel
-        3. Filter anomali berdasarkan posisi aktual di dalam LED
+        Metode:
+        1. Buat mask LED content menggunakan color analysis
+        2. Analisis anomali HANYA di dalam mask
+        3. Filter berdasarkan posisi aktual
 
         Args:
             led_region: Region gambar area LED.
@@ -355,32 +299,31 @@ class LEDAnalyzer(BaseDetector):
         hsv = cv2.cvtColor(led_region, cv2.COLOR_BGR2HSV)
         h_led, w_led = gray.shape
 
-        # Step 1: Buat mask LED content menggunakan multiple criteria
-        # LED content harus: terang, berwarna, dan memiliki texture
+        # Step 1: Buat mask LED content
         led_content_mask = self._create_led_content_mask(gray, hsv, h_led, w_led)
 
-        # Step 2: Cek apakah ada LED content yang terdeteksi
+        # Step 2: Jika tidak ada LED content, return empty
         if np.sum(led_content_mask) == 0:
             return []
 
-        # Step 3: Analisis setiap jenis anomali
-        # 1. Deteksi Blocking (area gelap di dalam LED content)
+        # Step 3: Analisis anomali
+        # 1. Blocking
         blocking = self._detect_blocking(gray, panel, led_content_mask)
         anomalies.extend(blocking)
 
-        # 2. Deteksi Flat/No Content (area rata tanpa konten)
+        # 2. Flat/No Content
         flat_content = self._detect_flat_content(gray, panel, led_content_mask)
         anomalies.extend(flat_content)
 
-        # 3. Deteksi Line Defects (garis-garis horizontal/vertical)
+        # 3. Line Defects
         lines = self._detect_line_defects(gray, panel, led_content_mask)
         anomalies.extend(lines)
 
-        # 4. Deteksi Dead Pixel Blocks (hanya di dalam LED content)
+        # 4. Dead Pixel Blocks
         dead_blocks = self._detect_dead_blocks_in_mask(gray, panel, led_content_mask)
         anomalies.extend(dead_blocks)
 
-        # 5. Deteksi Color Errors (hanya di dalam LED content)
+        # 5. Color Errors
         color_errors = self._detect_color_errors_in_mask(hsv, panel, led_content_mask)
         anomalies.extend(color_errors)
 
@@ -395,11 +338,10 @@ class LEDAnalyzer(BaseDetector):
     ) -> np.ndarray:
         """Buat mask untuk area LED content.
 
-        Metode:
-        1. Brightness threshold (LED harus terang)
-        2. Saturation threshold (LED harus berwarna)
-        3. Texture analysis (LED memiliki texture yang konsisten)
-        4. Morphological operations untuk cleanup
+        Pendekatan sederhana:
+        1. Threshold brightness + saturation
+        2. Morphological cleanup
+        3. Ambil connected component terbesar
 
         Args:
             gray: Grayscale image.
@@ -410,27 +352,27 @@ class LEDAnalyzer(BaseDetector):
         Returns:
             Binary mask (1 = LED content, 0 = non-LED).
         """
-        # Criteria 1: Brightness harus cukup terang
-        bright_mask = gray > 100
+        # Threshold untuk LED content
+        value_channel = hsv[:, :, 2]
+        sat_channel = hsv[:, :, 1]
 
-        # Criteria 2: Saturation harus cukup berwarna
-        sat_mask = hsv[:, :, 1] > 50
+        bright_mask = value_channel > 100
+        sat_mask = sat_channel > 40
 
-        # Criteria 3: Value harus cukup tinggi
-        val_mask = hsv[:, :, 2] > 80
-
-        # Gabungkan semua criteria
-        led_mask = (bright_mask & sat_mask & val_mask).astype(np.uint8)
+        led_mask = (bright_mask & sat_mask).astype(np.uint8)
 
         # Morphological cleanup
-        kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
-        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
+        kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
+        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
 
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel_close)
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel_open)
 
-        # Hanya ambil connected component TERBESAR
-        # Ini memastikan kita hanya analisis area LED utama
+        # Dilate untuk menghubungkan area terputus
+        kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))
+        led_mask = cv2.dilate(led_mask, kernel_dilate, iterations=2)
+
+        # Ambil connected component TERBESAR
         contours, _ = cv2.findContours(
             led_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
