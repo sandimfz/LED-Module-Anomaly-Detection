@@ -20,7 +20,8 @@ class Config:
         LOCATIONS: Konfigurasi per lokasi.
     """
 
-    BASE_DIR: Path = Path("/home/alen/apps/led")
+    # Auto-detect project root dari lokasi file ini
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
     DATASET_ROOT: Path = BASE_DIR / "dataset"
     MODELS_ROOT: Path = BASE_DIR / "models"
     OUTPUT_ROOT: Path = BASE_DIR / "output"
