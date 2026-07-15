@@ -104,8 +104,28 @@ class LEDAnalyzer(BaseDetector):
             led_panel.x : led_panel.x + led_panel.width,
         ]
 
-        anomalies = self._analyze_led_content(led_region, led_panel)
-        anomalies = self._filter_anomalies_in_panel(anomalies, led_panel)
+        # === CEK LED MATI TOTAL ===
+        # Jika brightness panel sangat rendah → LED off/blank
+        gray_region = cv2.cvtColor(led_region, cv2.COLOR_BGR2GRAY)
+        mean_brightness = float(np.mean(gray_region))
+
+        if mean_brightness < 40:
+            # LED mati total - seluruh layar gelap
+            anomalies = [
+                LEDAnomaly(
+                    x=led_panel.x,
+                    y=led_panel.y,
+                    width=led_panel.width,
+                    height=led_panel.height,
+                    anomaly_type="led_off",
+                    severity=1.0,
+                    description=f"LED mati total (brightness={mean_brightness:.0f})",
+                )
+            ]
+        else:
+            anomalies = self._analyze_led_content(led_region, led_panel)
+            anomalies = self._filter_anomalies_in_panel(anomalies, led_panel)
+
         score = self._calculate_score(anomalies, led_panel)
 
         annotated = self._annotate(image, led_panel, anomalies)
@@ -249,6 +269,10 @@ class LEDAnalyzer(BaseDetector):
 
         color_errors = self._detect_color_errors_in_mask(hsv, panel, led_content_mask)
         anomalies.extend(color_errors)
+
+        # Deteksi pixel chaos / module error — area dengan warna acak (corrupt data)
+        pixel_chaos = self._detect_pixel_chaos(gray, hsv, panel, led_content_mask)
+        anomalies.extend(pixel_chaos)
 
         # Deteksi module glitch — pola baris horizontal dengan warna berbeda-beda
         line_pattern = self._detect_horizontal_line_pattern(gray, hsv, panel, led_content_mask)
@@ -826,22 +850,19 @@ class LEDAnalyzer(BaseDetector):
         )
 
         # Pass 2: flag blok mencurigakan
-        # Syarat: hue_std tinggi + sat_std cukup + brightness tidak terlalu tinggi
-        # Filter brightness tinggi menghilangkan teks/logo terang (false positive)
         suspicious: set = set()
         for (r, c), stat in block_stats.items():
             if stat["hue_std"] <= chaos_threshold:
                 continue
-            # Brightness terlalu tinggi = kemungkinan teks/logo di area cerah
+            # Filter brightness tinggi — teks/logo cerah bukan glitch
             if stat["brightness"] > panel_brightness * 0.85:
                 continue
-            # sat_std minimum — memastikan ada variasi warna nyata
+            # sat_std minimum
             if stat["sat_std"] < 15:
                 continue
             suspicious.add((r, c))
 
-        # Pass 3: filter cluster — blok isolasi di tepi konten bukan glitch
-        # Glitch nyata biasanya muncul sebagai cluster, bukan blok tunggal
+        # Pass 3: filter cluster — minimal 2 tetangga
         confirmed_chaos: set = set()
         for (r, c) in suspicious:
             neighbor_suspicious = sum(
@@ -980,8 +1001,9 @@ class LEDAnalyzer(BaseDetector):
             window_diff = row_diffs[y:y+window_size]
             avg_diff = np.mean(window_diff)
             
-            # Threshold: avg_diff > 3.0 menandakan baris sangat bervariasi
-            if avg_diff > 3.0:
+            # Threshold: avg_diff > 8.0 menandakan baris SANGAT bervariasi
+            # (module error punya perbedaan warna ekstrim antar baris)
+            if avg_diff > 8.0:
                 high_diff_regions.append((y, y + window_size, avg_diff))
         
         # Untuk tiap region dengan high diff, cek apakah terlokalisir secara horizontal
@@ -1003,10 +1025,10 @@ class LEDAnalyzer(BaseDetector):
             # Cari section dengan diff tertinggi
             max_section_idx, max_section_diff = max(section_diffs, key=lambda x: x[1])
             
-            # Jika diff-nya sangat tinggi (> 5.0) dan terlokalisir (tidak semua section tinggi)
+            # Jika diff-nya SANGAT tinggi (> 10.0) dan terlokalisir
             other_sections_avg = np.mean([d for i, d in section_diffs if i != max_section_idx])
-            
-            is_localized = max_section_diff > 5.0 and max_section_diff > other_sections_avg * 2.0
+
+            is_localized = max_section_diff > 10.0 and max_section_diff > other_sections_avg * 2.0
             
             if is_localized:
                 x_anomaly = max_section_idx * section_width
