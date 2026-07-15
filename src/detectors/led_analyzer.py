@@ -88,29 +88,44 @@ class LEDAnalyzer(BaseDetector):
         image: np.ndarray,
         image_path: str,
     ) -> DetectionResult:
-        led_panel = self._find_led_panel(image)
+        h_img, w_img = image.shape[:2]
+        current_res = f"{w_img}x{h_img}"
 
-        if led_panel is None:
-            return DetectionResult(
-                location=self.config.name,
-                image_path=image_path,
-                anomaly_score=0.0,
-                level=AnomalyLevel.NORMAL,
-                message="Tidak dapat menemukan panel LED.",
+        # === PRIORITAS 1: Perspective Transform jika ada screen_points ===
+        if (
+            self.config.screen_points is not None
+            and self.config.screen_resolution == current_res
+        ):
+            led_region = self._perspective_crop(image, self.config.screen_points)
+            led_panel = LEDPanelInfo(
+                x=0, y=0,
+                width=led_region.shape[1],
+                height=led_region.shape[0],
+                confidence=1.0,
+                mean_brightness=float(np.mean(cv2.cvtColor(led_region, cv2.COLOR_BGR2GRAY))),
+                mean_saturation=float(np.mean(cv2.cvtColor(led_region, cv2.COLOR_BGR2HSV)[:, :, 1])),
             )
-
-        led_region = image[
-            led_panel.y : led_panel.y + led_panel.height,
-            led_panel.x : led_panel.x + led_panel.width,
-        ]
+        else:
+            # === FALLBACK: Auto-detect panel ===
+            led_panel = self._find_led_panel(image)
+            if led_panel is None:
+                return DetectionResult(
+                    location=self.config.name,
+                    image_path=image_path,
+                    anomaly_score=0.0,
+                    level=AnomalyLevel.NORMAL,
+                    message="Tidak dapat menemukan panel LED.",
+                )
+            led_region = image[
+                led_panel.y : led_panel.y + led_panel.height,
+                led_panel.x : led_panel.x + led_panel.width,
+            ].copy()
 
         # === CEK LED MATI TOTAL ===
-        # Jika brightness panel sangat rendah → LED off/blank
         gray_region = cv2.cvtColor(led_region, cv2.COLOR_BGR2GRAY)
         mean_brightness = float(np.mean(gray_region))
 
         if mean_brightness < 40:
-            # LED mati total - seluruh layar gelap
             anomalies = [
                 LEDAnomaly(
                     x=led_panel.x,
@@ -124,7 +139,6 @@ class LEDAnalyzer(BaseDetector):
             ]
         else:
             anomalies = self._analyze_led_content(led_region, led_panel)
-            anomalies = self._filter_anomalies_in_panel(anomalies, led_panel)
 
         score = self._calculate_score(anomalies, led_panel)
 
@@ -142,6 +156,43 @@ class LEDAnalyzer(BaseDetector):
             flagged_cells=[],
             heatmap_path=output_path,
         )
+
+    def _perspective_crop(
+        self,
+        image: np.ndarray,
+        screen_points: List[List[int]],
+    ) -> np.ndarray:
+        """Crop LED screen menggunakan perspective transform.
+
+        Args:
+            image: Gambar asli.
+            screen_points: 4 titik corner [[x,y],[x,y],[x,y],[x,y]] = TL,TR,BR,BL.
+
+        Returns:
+            Gambar LED screen yang sudah diluruskan.
+        """
+        pts_src = np.array(screen_points, dtype="float32")
+
+        # Hitung dimensi output dari jarak antar titik
+        tl, tr, br, bl = pts_src
+        max_width = int(max(
+            np.linalg.norm(br - bl),
+            np.linalg.norm(tr - tl),
+        ))
+        max_height = int(max(
+            np.linalg.norm(tr - br),
+            np.linalg.norm(tl - bl),
+        ))
+
+        pts_dst = np.array([
+            [0, 0],
+            [max_width - 1, 0],
+            [max_width - 1, max_height - 1],
+            [0, max_height - 1],
+        ], dtype="float32")
+
+        M = cv2.getPerspectiveTransform(pts_src, pts_dst)
+        return cv2.warpPerspective(image, M, (max_width, max_height))
 
     def _find_led_panel(self, image: np.ndarray) -> Optional[LEDPanelInfo]:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -245,38 +296,43 @@ class LEDAnalyzer(BaseDetector):
         led_region: np.ndarray,
         panel: LEDPanelInfo,
     ) -> List[LEDAnomaly]:
+        """Analisis konten LED.
+
+        Karena led_region SUDAH di-crop ke panel LED,
+        kita tidak perlu sub-mask yang rumit.
+        Cukup threshold sederhana untuk filter area gelap/bezel.
+
+        Args:
+            led_region: Region gambar yang SUDAH di-crop ke panel LED.
+            panel: Info panel LED.
+
+        Returns:
+            List anomali yang terdeteksi.
+        """
         anomalies: List[LEDAnomaly] = []
         gray = cv2.cvtColor(led_region, cv2.COLOR_BGR2GRAY)
         hsv = cv2.cvtColor(led_region, cv2.COLOR_BGR2HSV)
         h_led, w_led = gray.shape
 
-        led_content_mask = self._create_led_content_mask(gray, hsv, h_led, w_led)
+        # Mask sederhana: area yang terang + berwarna
+        # Karena sudah di-crop ke LED, threshold ini cukup
+        value_channel = hsv[:, :, 2]
+        sat_channel = hsv[:, :, 1]
+        led_mask = ((value_channel > 80) & (sat_channel > 30)).astype(np.uint8)
 
-        if np.sum(led_content_mask) == 0:
-            return []
+        # Cleanup ringan
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))
+        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel)
+        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel)
 
-        blocking = self._detect_blocking(gray, panel, led_content_mask)
-        anomalies.extend(blocking)
-
-        flat_content = self._detect_flat_content(gray, panel, led_content_mask)
-        anomalies.extend(flat_content)
-
-        lines = self._detect_line_defects(gray, panel, led_content_mask)
-        anomalies.extend(lines)
-
-        dead_blocks = self._detect_dead_blocks_in_mask(gray, panel, led_content_mask)
-        anomalies.extend(dead_blocks)
-
-        color_errors = self._detect_color_errors_in_mask(hsv, panel, led_content_mask)
-        anomalies.extend(color_errors)
-
-        # Deteksi pixel chaos / module error — area dengan warna acak (corrupt data)
-        pixel_chaos = self._detect_pixel_chaos(gray, hsv, panel, led_content_mask)
-        anomalies.extend(pixel_chaos)
-
-        # Deteksi module glitch — pola baris horizontal dengan warna berbeda-beda
-        line_pattern = self._detect_horizontal_line_pattern(gray, hsv, panel, led_content_mask)
-        anomalies.extend(line_pattern)
+        # Semua detector berjalan di cropped LED area
+        anomalies.extend(self._detect_blocking(gray, panel, led_mask))
+        anomalies.extend(self._detect_flat_content(gray, panel, led_mask))
+        anomalies.extend(self._detect_line_defects(gray, panel, led_mask))
+        anomalies.extend(self._detect_dead_blocks_in_mask(gray, panel, led_mask))
+        anomalies.extend(self._detect_color_errors_in_mask(hsv, panel, led_mask))
+        anomalies.extend(self._detect_pixel_chaos(gray, hsv, panel, led_mask))
+        anomalies.extend(self._detect_horizontal_line_pattern(gray, hsv, panel, led_mask))
 
         return anomalies
 
@@ -287,34 +343,39 @@ class LEDAnalyzer(BaseDetector):
         h: int,
         w: int,
     ) -> np.ndarray:
-        sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-        sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
-        gradient_mag = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+        """Buat mask untuk area LED content.
 
-        gradient_mag = cv2.GaussianBlur(gradient_mag, (5, 5), 0)
+        Karena gambar sudah di-crop ke panel LED di detect(),
+        mask ini cukup menandai area yang ada konten LEDnya.
 
-        value_channel = hsv[:, :, 2].astype(float)
-        sat_channel = hsv[:, :, 1].astype(float)
+        Args:
+            gray: Grayscale image (sudah di-crop ke LED).
+            hsv: HSV image (sudah di-crop ke LED).
+            h: Height.
+            w: Width.
 
-        bright_score = np.clip(value_channel / 150.0, 0, 1)
-        sat_score = np.clip(sat_channel / 80.0, 0, 1)
+        Returns:
+            Binary mask (1 = LED content, 0 = non-LED).
+        """
+        # Karena sudah di-crop ke panel LED,
+        # gunakan threshold sederhana: terang + berwarna
+        value_channel = hsv[:, :, 2]
+        sat_channel = hsv[:, :, 1]
 
-        grad_max = np.percentile(gradient_mag, 95) if np.max(gradient_mag) > 0 else 1
-        texture_score = np.clip(gradient_mag / grad_max, 0, 1)
+        bright_mask = value_channel > 80
+        sat_mask = sat_channel > 30
 
-        combined = bright_score * 0.3 + sat_score * 0.3 + texture_score * 0.4
+        led_mask = (bright_mask & sat_mask).astype(np.uint8)
 
-        led_mask = (combined > 0.4).astype(np.uint8)
+        # Morphological cleanup
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel)
+        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel)
 
-        kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
-        kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
+        # Dilate untuk menghubungkan area terputus
+        led_mask = cv2.dilate(led_mask, kernel, iterations=2)
 
-        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel_close)
-        led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel_open)
-
-        kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))
-        led_mask = cv2.dilate(led_mask, kernel_dilate, iterations=2)
-
+        # Ambil connected component TERBESAR
         contours, _ = cv2.findContours(
             led_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
@@ -820,7 +881,7 @@ class LEDAnalyzer(BaseDetector):
                 block_mask = led_mask[by:by + block_size, bx:bx + block_size]
                 led_ratio = float(np.mean(block_mask))
 
-                if led_ratio < 0.5:
+                if led_ratio < 0.8:
                     continue
 
                 b_hue = hue[by:by + block_size, bx:bx + block_size]
@@ -869,7 +930,7 @@ class LEDAnalyzer(BaseDetector):
                 1 for dr in range(-2, 3) for dc in range(-2, 3)
                 if (dr, dc) != (0, 0) and (r + dr, c + dc) in suspicious
             )
-            if neighbor_suspicious >= 2:
+            if neighbor_suspicious >= 3:
                 confirmed_chaos.add((r, c))
 
         for (r, c) in confirmed_chaos:

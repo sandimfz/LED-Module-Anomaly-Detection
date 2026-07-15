@@ -52,6 +52,15 @@ class Config:
                 name="lengkong",
                 grid_rows=12,
                 grid_cols=16,
+                # 4 titik corner LED screen untuk perspective transform
+                # Format: TL, TR, BR, BL — untuk resolusi 1280x720
+                screen_points=[
+                    [327, 237],   # Top-Left
+                    [426, 697],   # Top-Right
+                    [997, 445],   # Bottom-Right
+                    [1071, 172],  # Bottom-Left
+                ],
+                screen_resolution="1280x720",
             ),
             "paskal": LocationConfig(
                 name="paskal",

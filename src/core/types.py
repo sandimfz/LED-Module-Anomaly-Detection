@@ -40,6 +40,11 @@ class LocationConfig:
     dark_delta_threshold: float = 40.0
     flat_ratio_threshold: float = 0.35
     color_hue_delta_threshold: float = 35.0
+    # 4 titik corner LED screen untuk perspective transform
+    # Format: [[x,y], [x,y], [x,y], [x,y]] = TL, TR, BR, BL
+    # Resolusi referensi harus sesuai dengan gambar asli
+    screen_points: Optional[List[List[int]]] = None
+    screen_resolution: Optional[str] = None  # misal: "1280x720"
 
 
 @dataclass
