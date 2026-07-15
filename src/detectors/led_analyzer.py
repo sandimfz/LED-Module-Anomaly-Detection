@@ -50,18 +50,6 @@ def col_means_safe(x: int, gray: np.ndarray, led_mask: np.ndarray) -> float:
 
 @dataclass
 class LEDPanelInfo:
-    """Informasi panel LED yang terdeteksi.
-
-    Attributes:
-        x: Koordinat x top-left.
-        y: Koordinat y top-left.
-        width: Lebar panel.
-        height: Tinggi panel.
-        confidence: Confidence score (0-1).
-        mean_brightness: Rata-rata brightness panel.
-        mean_saturation: Rata-rata saturasi panel.
-    """
-
     x: int
     y: int
     width: int
@@ -73,18 +61,6 @@ class LEDPanelInfo:
 
 @dataclass
 class LEDAnomaly:
-    """Anomali yang terdeteksi di LED.
-
-    Attributes:
-        x: Koordinat x.
-        y: Koordinat y.
-        width: Lebar anomali.
-        height: Tinggi anomali.
-        anomaly_type: Jenis anomali (blocking, dead_pixel, line_defect, color_error).
-        severity: Tingkat keparahan (0-1).
-        description: Deskripsi anomali.
-    """
-
     x: int
     y: int
     width: int
@@ -95,15 +71,6 @@ class LEDAnomaly:
 
 
 class LEDAnalyzer(BaseDetector):
-    """Analyzer yang meniru cara AI membaca gambar LED.
-
-    Attributes:
-        config: Konfigurasi lokasi.
-        min_panel_area: Minimal area LED panel (pixel).
-        edge_threshold: Threshold untuk Canny edge detection.
-        blocking_threshold: Threshold untuk deteksi blocking.
-    """
-
     def __init__(
         self,
         config: LocationConfig,
@@ -111,14 +78,6 @@ class LEDAnalyzer(BaseDetector):
         edge_threshold: int = 50,
         blocking_threshold: float = 0.3,
     ) -> None:
-        """Initialize LED analyzer.
-
-        Args:
-            config: Konfigurasi lokasi.
-            min_panel_area: Minimal area LED panel.
-            edge_threshold: Threshold untuk edge detection.
-            blocking_threshold: Threshold untuk blocking detection.
-        """
         super().__init__(config)
         self.min_panel_area = min_panel_area
         self.edge_threshold = edge_threshold
@@ -129,16 +88,6 @@ class LEDAnalyzer(BaseDetector):
         image: np.ndarray,
         image_path: str,
     ) -> DetectionResult:
-        """Analisis gambar LED seperti cara AI membaca.
-
-        Args:
-            image: Gambar BGR.
-            image_path: Path gambar.
-
-        Returns:
-            DetectionResult.
-        """
-        # Step 1: Temukan area LED
         led_panel = self._find_led_panel(image)
 
         if led_panel is None:
@@ -150,22 +99,15 @@ class LEDAnalyzer(BaseDetector):
                 message="Tidak dapat menemukan panel LED.",
             )
 
-        # Step 2: Ekstrak area LED
         led_region = image[
             led_panel.y : led_panel.y + led_panel.height,
             led_panel.x : led_panel.x + led_panel.width,
         ]
 
-        # Step 3: Analisis konten LED
         anomalies = self._analyze_led_content(led_region, led_panel)
-
-        # Step 4: Filter anomali — HANYA yang di area LED (terang + berwarna)
         anomalies = self._filter_anomalies_in_panel(anomalies, led_panel)
-
-        # Step 5: Hitung skor
         score = self._calculate_score(anomalies, led_panel)
 
-        # Step 5: Buat visualisasi
         annotated = self._annotate(image, led_panel, anomalies)
         status = self._determine_level(score)
         output_path = self.get_output_path(image_path, "led_analysis", status)
@@ -182,44 +124,23 @@ class LEDAnalyzer(BaseDetector):
         )
 
     def _find_led_panel(self, image: np.ndarray) -> Optional[LEDPanelInfo]:
-        """Temukan panel LED menggunakan color-based detection.
-
-        LED panel memiliki karakteristik:
-        1. Area terang dengan warna konsisten
-        2. Bentuk rectangular
-        3. Besar dan di posisi tengah/frame
-
-        Args:
-            image: Gambar BGR.
-
-        Returns:
-            LEDPanelInfo atau None jika tidak ditemukan.
-        """
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         h_img, w_img = gray.shape
 
-        # Step 1: Buat mask untuk area yang KEMUNGKINAN LED
-        # LED harus terang (value tinggi) dan berwarna (saturation tinggi)
-        # Threshold lebih tinggi untuk menghindari bezel gelap
         value_channel = hsv[:, :, 2]
         sat_channel = hsv[:, :, 1]
 
-        # LED content: terang DAN berwarna
         bright_mask = value_channel > 120
         sat_mask = sat_channel > 40
         led_mask = (bright_mask & sat_mask).astype(np.uint8)
 
-        # Step 2: Morphological cleanup
-        # Close untuk menghubungkan area terputus
         kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (25, 25))
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel_close)
 
-        # Open untuk menghilangkan noise kecil
         kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel_open)
 
-        # Step 3: Cari kontur
         contours, _ = cv2.findContours(
             led_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
@@ -227,33 +148,36 @@ class LEDAnalyzer(BaseDetector):
         if not contours:
             return None
 
-        # Step 4: Evaluate setiap kontur sebagai kandidat LED panel
         candidates = []
         for contour in contours:
             area = cv2.contourArea(contour)
 
-            # Filter area terlalu kecil
             if area < self.min_panel_area:
                 continue
 
             x, y, w, h = cv2.boundingRect(contour)
 
-            # Aspect ratio harus wajar untuk LED panel
             aspect_ratio = w / h if h > 0 else 0
             if not (0.4 < aspect_ratio < 4.0):
                 continue
 
-            # Hitung rectangularity
-            rect_area = w * h
-            if rect_area == 0:
-                continue
-            rectangularity = area / rect_area
+            # FIX: pakai minAreaRect (rotated rectangle), bukan axis-aligned
+            # bounding box, untuk hitung rectangularity. Axis-aligned bbox
+            # gagal untuk kamera yang motret LED dari sudut miring (panel
+            # jadi trapesium di gambar) -- bbox-nya jadi jauh lebih besar
+            # dari luas panel sebenarnya, bikin rectangularity jatuh di
+            # bawah threshold walau bentuknya sebenarnya rectangular (cuma
+            # miring/skewed karena perspektif kamera).
+            rot_rect = cv2.minAreaRect(contour)
+            rot_w, rot_h = rot_rect[1]
+            rot_area = rot_w * rot_h
+            rectangularity = area / rot_area if rot_area > 0 else 0
 
-            # Harus cukup rectangular (>0.5)
-            if rectangularity < 0.5:
+            # Threshold diturunkan sedikit (0.5 -> 0.4) untuk akomodasi
+            # panel yang difoto dari sudut sangat miring/ekstrem.
+            if rectangularity < 0.4:
                 continue
 
-            # Analisis isi bounding box
             roi_gray = gray[y : y + h, x : x + w]
             roi_sat = sat_channel[y : y + h, x : x + w]
             roi_val = value_channel[y : y + h, x : x + w]
@@ -262,11 +186,9 @@ class LEDAnalyzer(BaseDetector):
             mean_saturation = np.mean(roi_sat)
             mean_value = np.mean(roi_val)
 
-            # LED harus terang dan berwarna
             if mean_brightness < 90 or mean_saturation < 35:
                 continue
 
-            # Score: kombinasi ukuran, rectangularity, brightness, saturation
             size_score = area / (h_img * w_img)
             score = (
                 rectangularity * 0.25
@@ -286,7 +208,6 @@ class LEDAnalyzer(BaseDetector):
         if not candidates:
             return None
 
-        # Step 5: Ambil kandidat TERBAIK (skor tertinggi)
         best = max(candidates, key=lambda c: c["score"])
 
         return LEDPanelInfo(
@@ -304,52 +225,34 @@ class LEDAnalyzer(BaseDetector):
         led_region: np.ndarray,
         panel: LEDPanelInfo,
     ) -> List[LEDAnomaly]:
-        """Analisis konten di dalam area LED.
-
-        Metode:
-        1. Buat mask LED content menggunakan color analysis
-        2. Analisis anomali HANYA di dalam mask
-        3. Filter berdasarkan posisi aktual
-
-        Args:
-            led_region: Region gambar area LED.
-            panel: Info panel LED.
-
-        Returns:
-            List anomali yang terdeteksi.
-        """
         anomalies: List[LEDAnomaly] = []
         gray = cv2.cvtColor(led_region, cv2.COLOR_BGR2GRAY)
         hsv = cv2.cvtColor(led_region, cv2.COLOR_BGR2HSV)
         h_led, w_led = gray.shape
 
-        # Step 1: Buat mask LED content
         led_content_mask = self._create_led_content_mask(gray, hsv, h_led, w_led)
 
-        # Step 2: Jika tidak ada LED content, return empty
         if np.sum(led_content_mask) == 0:
             return []
 
-        # Step 3: Analisis anomali
-        # 1. Blocking
         blocking = self._detect_blocking(gray, panel, led_content_mask)
         anomalies.extend(blocking)
 
-        # 2. Flat/No Content
         flat_content = self._detect_flat_content(gray, panel, led_content_mask)
         anomalies.extend(flat_content)
 
-        # 3. Line Defects
         lines = self._detect_line_defects(gray, panel, led_content_mask)
         anomalies.extend(lines)
 
-        # 4. Dead Pixel Blocks
         dead_blocks = self._detect_dead_blocks_in_mask(gray, panel, led_content_mask)
         anomalies.extend(dead_blocks)
 
-        # 5. Color Errors
         color_errors = self._detect_color_errors_in_mask(hsv, panel, led_content_mask)
         anomalies.extend(color_errors)
+
+        # Deteksi module glitch — pola baris horizontal dengan warna berbeda-beda
+        line_pattern = self._detect_horizontal_line_pattern(gray, hsv, panel, led_content_mask)
+        anomalies.extend(line_pattern)
 
         return anomalies
 
@@ -360,62 +263,34 @@ class LEDAnalyzer(BaseDetector):
         h: int,
         w: int,
     ) -> np.ndarray:
-        """Buat mask untuk area LED content.
+        sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+        gradient_mag = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
 
-        Perbedaan LED content vs bezel:
-        - LED content: ada konten (text, gambar, warna)
-        - Bezel: solid color uniform (hijau, biru, atau hitam)
+        gradient_mag = cv2.GaussianBlur(gradient_mag, (5, 5), 0)
 
-        Pendekatan:
-        1. Brightness + saturation threshold
-        2. Exclude area dengan variance SANGAT rendah (solid color = bezel)
-        3. Ambil connected component terbesar
+        value_channel = hsv[:, :, 2].astype(float)
+        sat_channel = hsv[:, :, 1].astype(float)
 
-        Args:
-            gray: Grayscale image.
-            hsv: HSV image.
-            h: Height.
-            w: Width.
+        bright_score = np.clip(value_channel / 150.0, 0, 1)
+        sat_score = np.clip(sat_channel / 80.0, 0, 1)
 
-        Returns:
-            Binary mask (1 = LED content, 0 = non-LED).
-        """
-        # Step 1: Brightness + saturation threshold
-        value_channel = hsv[:, :, 2]
-        sat_channel = hsv[:, :, 1]
+        grad_max = np.percentile(gradient_mag, 95) if np.max(gradient_mag) > 0 else 1
+        texture_score = np.clip(gradient_mag / grad_max, 0, 1)
 
-        bright_mask = value_channel > 100
-        sat_mask = sat_channel > 40
-        basic_mask = (bright_mask & sat_mask).astype(np.uint8)
+        combined = bright_score * 0.3 + sat_score * 0.3 + texture_score * 0.4
 
-        # Step 2: Local variance - EXCLUDE solid color (bezel)
-        gray_float = gray.astype(np.float32)
-        kernel_size = 15
-        kernel = np.ones((kernel_size, kernel_size), np.float32) / (kernel_size ** 2)
-        local_mean = cv2.filter2D(gray_float, -1, kernel)
-        local_sq_mean = cv2.filter2D(gray_float ** 2, -1, kernel)
-        local_var = np.maximum(local_sq_mean - local_mean ** 2, 0)
+        led_mask = (combined > 0.4).astype(np.uint8)
 
-        # Bezel = variance SANGAT rendah (< 3 = solid color)
-        # LED content = variance lebih tinggi (> 3)
-        solid_mask = (local_var < 3.0).astype(np.uint8)
-
-        # Exclude solid color areas dari basic mask
-        # led_mask = basic_mask TAPI BUKAN solid color
-        led_mask = (basic_mask & (1 - solid_mask)).astype(np.uint8)
-
-        # Morphological cleanup
         kernel_close = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
         kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
 
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_CLOSE, kernel_close)
         led_mask = cv2.morphologyEx(led_mask, cv2.MORPH_OPEN, kernel_open)
 
-        # Dilate untuk menghubungkan area terputus
         kernel_dilate = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))
         led_mask = cv2.dilate(led_mask, kernel_dilate, iterations=2)
 
-        # Ambil connected component TERBESAR
         contours, _ = cv2.findContours(
             led_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
@@ -433,26 +308,9 @@ class LEDAnalyzer(BaseDetector):
         panel: LEDPanelInfo,
         led_mask: np.ndarray,
     ) -> List[LEDAnomaly]:
-        """Deteksi blocking (area gelap yang memotong konten LED).
-
-        Metode yang lebih akurat:
-        1. Gunakan adaptive threshold untuk menemukan area gelap
-        2. Filter berdasarkan ukuran dan posisi
-        3. Hanya deteksi di dalam LED content mask
-
-        Args:
-            gray: Gambar grayscale area LED.
-            panel: Info panel LED.
-            led_mask: Mask area LED content (hanya analisis di sini).
-
-        Returns:
-            List blocking anomalies.
-        """
         anomalies: List[LEDAnomaly] = []
         h, w = gray.shape
 
-        # Hitung threshold berdasarkan local statistics
-        # Gunakan mean brightness dari area LED sebagai referensi
         led_pixels = gray[led_mask > 0]
         if len(led_pixels) == 0:
             return []
@@ -460,14 +318,10 @@ class LEDAnalyzer(BaseDetector):
         led_mean = np.mean(led_pixels)
         led_std = np.std(led_pixels)
 
-        # Threshold: area gelap jika < mean - 2*std
-        # Ini lebih adaptif daripada fixed percentage
         threshold = max(led_mean - 2 * led_std, 30)
 
-        # Dark mask: area yang gelap DAN di dalam LED content
         dark_mask = (gray < threshold) & (led_mask > 0)
 
-        # Cleanup
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
         dark_mask = cv2.morphologyEx(
             dark_mask.astype(np.uint8), cv2.MORPH_OPEN, kernel
@@ -482,28 +336,24 @@ class LEDAnalyzer(BaseDetector):
 
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area < 200:  # Abaikan noise (naikkan threshold)
+            if area < 200:
                 continue
 
             x, y, cw, ch = cv2.boundingRect(contour)
 
-            # Hitung area ratio
             area_ratio = area / (h * w)
 
-            # Filter berdasarkan ukuran
-            # Terlalu kecil = noise, terlalu besar = false positive
             if area_ratio < 0.001 or area_ratio > 0.5:
                 continue
 
-            # Cek apakah ini blocking (membentuk garis/rectangle panjang)
             is_blocking = False
-            if cw > w * 0.3:  # Horizontal blocking
+            if cw > w * 0.3:
                 is_blocking = True
                 desc = "Horizontal blocking"
-            elif ch > h * 0.3:  # Vertical blocking
+            elif ch > h * 0.3:
                 is_blocking = True
                 desc = "Vertical blocking"
-            elif area_ratio > 0.01:  # Large dark area (> 1% of LED)
+            elif area_ratio > 0.01:
                 is_blocking = True
                 desc = "Large dark area"
 
@@ -529,45 +379,22 @@ class LEDAnalyzer(BaseDetector):
         panel: LEDPanelInfo,
         led_mask: np.ndarray,
     ) -> List[LEDAnomaly]:
-        """Deteksi area flat/rata tanpa konten (no content area).
-
-        Hanya deteksi area yang:
-        1. Di dalam LED content mask
-        2. Variance SANGAT rendah (threshold ketat)
-        3. Brightness cukup terang (bukan area gelap normal)
-
-        Args:
-            gray: Gambar grayscale area LED.
-            panel: Info panel LED.
-            led_mask: Mask area LED content.
-
-        Returns:
-            List flat content anomalies.
-        """
         anomalies: List[LEDAnomaly] = []
         h, w = gray.shape
 
-        # Hitung statistics dari LED content saja
         led_pixels = gray[led_mask > 0]
         if len(led_pixels) == 0:
             return []
 
         led_mean = float(np.mean(led_pixels))
-        led_std = float(np.std(led_pixels))
 
-        # Bagi menjadi blok-blok dan cek variance
         block_size = 64
-        # Threshold KETAT: variance harus SANGAT rendah untuk dianggap "flat"
-        # Gunakan 10% dari std^2 LED sebagai threshold
-        flat_threshold = max(led_std * led_std * 0.1, 10.0)
 
         for by in range(0, h - block_size, block_size):
             for bx in range(0, w - block_size, block_size):
-                # Cek apakah block ini di dalam area LED
                 block_mask = led_mask[by : by + block_size, bx : bx + block_size]
                 led_ratio = np.mean(block_mask)
 
-                # Hanya analisis jika > 80% block adalah LED content
                 if led_ratio < 0.8:
                     continue
 
@@ -575,25 +402,30 @@ class LEDAnalyzer(BaseDetector):
                 block_var = float(np.var(block))
                 block_mean = float(np.mean(block))
 
-                # Cek apakah block ini flat
-                if block_var < flat_threshold:
-                    # Block harus TERANG (bukan area gelap normal)
-                    # Dan brightness harus mirip dengan mean LED
-                    if block_mean > led_mean * 0.5 and block_mean < led_mean * 2.0:
-                        severity = 1.0 - (block_var / flat_threshold)
-                        anomalies.append(
-                            LEDAnomaly(
-                                x=bx + panel.x,
-                                y=by + panel.y,
-                                width=block_size,
-                                height=block_size,
-                                anomaly_type="flat_content",
-                                severity=severity,
-                                description=f"No content at ({bx},{by})",
-                            )
-                        )
+                is_blank_white = block_var < 5.0 and block_mean > 200
+                is_blank_black = block_var < 5.0 and block_mean < 10
+                is_abnormal_flat = (
+                    block_var < 3.0
+                    and block_mean > led_mean * 1.5
+                )
 
-        # Merge overlapping flat areas
+                if is_blank_white or is_blank_black or is_abnormal_flat:
+                    severity = 1.0 - min(block_var / 5.0, 1.0)
+                    desc = "Blank white" if is_blank_white else (
+                        "Blank black" if is_blank_black else "Abnormal flat"
+                    )
+                    anomalies.append(
+                        LEDAnomaly(
+                            x=bx + panel.x,
+                            y=by + panel.y,
+                            width=block_size,
+                            height=block_size,
+                            anomaly_type="flat_content",
+                            severity=severity,
+                            description=f"{desc} at ({bx},{by})",
+                        )
+                    )
+
         return self._merge_flat_anomalies(anomalies, panel)
 
     def _merge_flat_anomalies(
@@ -601,35 +433,23 @@ class LEDAnalyzer(BaseDetector):
         anomalies: List[LEDAnomaly],
         panel: LEDPanelInfo,
     ) -> List[LEDAnomaly]:
-        """Merge flat anomalies yang overlap untuk mengurangi noise.
-
-        Args:
-            anomalies: List flat anomalies.
-            panel: Info panel LED.
-
-        Returns:
-            List merged anomalies.
-        """
         if not anomalies:
             return []
 
-        # Group by proximity dan merge
         merged: List[LEDAnomaly] = []
         used = [False] * len(anomalies)
-        block_size = 64  # Same as in _detect_flat_content
+        block_size = 64
 
         for i, a1 in enumerate(anomalies):
             if used[i]:
                 continue
 
-            # Cari anomaly yang berdekatan
             group = [a1]
             used[i] = True
 
             for j, a2 in enumerate(anomalies):
                 if used[j]:
                     continue
-                # Cek apakah berdekatan (dalam 1 block size)
                 if (
                     abs(a1.x - a2.x) < block_size * 2
                     and abs(a1.y - a2.y) < block_size * 2
@@ -637,8 +457,7 @@ class LEDAnalyzer(BaseDetector):
                     group.append(a2)
                     used[j] = True
 
-            # Merge group
-            if len(group) >= 4:  # Minimal 4 blocks untuk dianggap anomali
+            if len(group) >= 4:
                 min_x = min(a.x for a in group)
                 min_y = min(a.y for a in group)
                 max_x = max(a.x + a.width for a in group)
@@ -665,23 +484,9 @@ class LEDAnalyzer(BaseDetector):
         panel: LEDPanelInfo,
         led_mask: np.ndarray,
     ) -> List[LEDAnomaly]:
-        """Deteksi line defects (garis horizontal/vertical).
-
-        Hanya report garis yang BENAR-BENAR gelap di area LED content.
-        Width/height mengikuti area gelap aktual, bukan seluruh panel.
-
-        Args:
-            gray: Gambar grayscale area LED.
-            panel: Info panel LED.
-            led_mask: Mask area LED content.
-
-        Returns:
-            List line defect anomalies.
-        """
         anomalies: List[LEDAnomaly] = []
         h, w = gray.shape
 
-        # Hitung statistics dari pixel LED saja
         led_pixels = gray[led_mask > 0]
         if len(led_pixels) == 0:
             return []
@@ -689,31 +494,24 @@ class LEDAnalyzer(BaseDetector):
         led_mean = float(np.mean(led_pixels))
         led_std = float(np.std(led_pixels))
 
-        # Threshold: garis jika < mean - 2*std
         threshold = max(led_mean - led_std * 2, 30)
 
-        # Deteksi garis horizontal
         for y in range(2, h - 2):
             row = gray[y, :]
             row_led = led_mask[y, :] > 0
 
-            # Hitung berapa pixel di baris ini yang gelap DAN di area LED
             dark_in_led = np.sum((row < threshold) & row_led)
             total_led_in_row = np.sum(row_led)
 
-            # Minimal 40% dari LED di baris ini harus gelap
             if total_led_in_row > w * 0.3 and dark_in_led > total_led_in_row * 0.4:
-                # Cek local minimum
                 if row_means_safe(y, gray, led_mask) < row_means_safe(y - 1, gray, led_mask) \
                    and row_means_safe(y, gray, led_mask) < row_means_safe(y + 1, gray, led_mask):
-                    # Hitung rentang horizontal garis gelap
                     dark_cols = np.where((row < threshold) & row_led)[0]
                     if len(dark_cols) > 0:
                         x_start = dark_cols[0]
                         x_end = dark_cols[-1]
                         line_width = x_end - x_start
 
-                        # Garis harus cukup panjang (> 30% width)
                         if line_width > w * 0.3:
                             severity = min(dark_in_led / total_led_in_row, 1.0)
                             anomalies.append(
@@ -728,7 +526,6 @@ class LEDAnalyzer(BaseDetector):
                                 )
                             )
 
-        # Deteksi garis vertical
         for x in range(2, w - 2):
             col = gray[:, x]
             col_led = led_mask[:, x] > 0
@@ -766,26 +563,15 @@ class LEDAnalyzer(BaseDetector):
         gray: np.ndarray,
         panel: LEDPanelInfo,
     ) -> List[LEDAnomaly]:
-        """Deteksi dead pixel blocks.
-
-        Args:
-            gray: Gambar grayscale area LED.
-            panel: Info panel LED.
-
-        Returns:
-            List dead block anomalies.
-        """
         anomalies: List[LEDAnomaly] = []
         h, w = gray.shape
 
-        # Grid analysis: bagi menjadi blok-blok kecil
         block_size = 32
         for by in range(0, h - block_size, block_size):
             for bx in range(0, w - block_size, block_size):
                 block = gray[by : by + block_size, bx : bx + block_size]
                 block_mean = np.mean(block)
 
-                # Bandingkan dengan rata-rata panel
                 if block_mean < panel.mean_brightness * 0.2:
                     severity = 1.0 - (block_mean / panel.mean_brightness)
                     anomalies.append(
@@ -808,35 +594,21 @@ class LEDAnalyzer(BaseDetector):
         panel: LEDPanelInfo,
         led_mask: np.ndarray,
     ) -> List[LEDAnomaly]:
-        """Deteksi dead pixel blocks HANYA di dalam LED content mask.
-
-        Args:
-            gray: Gambar grayscale area LED.
-            panel: Info panel LED.
-            led_mask: Mask area LED content.
-
-        Returns:
-            List dead block anomalies.
-        """
         anomalies: List[LEDAnomaly] = []
         h, w = gray.shape
 
-        # Grid analysis: bagi menjadi blok-blok kecil
         block_size = 32
         for by in range(0, h - block_size, block_size):
             for bx in range(0, w - block_size, block_size):
-                # Cek apakah block ini di dalam LED content
                 block_mask = led_mask[by : by + block_size, bx : bx + block_size]
                 led_ratio = np.mean(block_mask)
 
-                # Hanya analisis jika > 70% block adalah LED content
                 if led_ratio < 0.7:
                     continue
 
                 block = gray[by : by + block_size, bx : bx + block_size]
                 block_mean = np.mean(block)
 
-                # Bandingkan dengan rata-rata panel
                 if block_mean < panel.mean_brightness * 0.2:
                     severity = 1.0 - (block_mean / panel.mean_brightness)
                     anomalies.append(
@@ -858,23 +630,12 @@ class LEDAnalyzer(BaseDetector):
         hsv: np.ndarray,
         panel: LEDPanelInfo,
     ) -> List[LEDAnomaly]:
-        """Deteksi color errors.
-
-        Args:
-            hsv: Gambar HSV area LED.
-            panel: Info panel LED.
-
-        Returns:
-            List color error anomalies.
-        """
         anomalies: List[LEDAnomaly] = []
         h, w = hsv.shape[:2]
 
-        # Analisis hue distribution
         hue = hsv[:, :, 0]
         sat = hsv[:, :, 1]
 
-        # Grid analysis untuk warna
         block_size = 64
 
         for by in range(0, h - block_size, block_size):
@@ -884,7 +645,6 @@ class LEDAnalyzer(BaseDetector):
                 hue_mean = np.mean(block_hue)
                 sat_mean = np.mean(block_sat)
 
-                # Cek jika saturasi rendah (warna pudar/abu-abu)
                 if sat_mean < 30 and panel.mean_saturation > 50:
                     severity = 1.0 - (sat_mean / panel.mean_saturation)
                     anomalies.append(
@@ -907,56 +667,374 @@ class LEDAnalyzer(BaseDetector):
         panel: LEDPanelInfo,
         led_mask: np.ndarray,
     ) -> List[LEDAnomaly]:
-        """Deteksi color errors HANYA di dalam LED content mask.
+        """Deteksi color error dengan membandingkan tiap blok ke TETANGGANYA
+        (bukan ke rata-rata saturasi panel secara keseluruhan).
 
-        Args:
-            hsv: Gambar HSV area LED.
-            panel: Info panel LED.
-            led_mask: Mask area LED content.
+        FIX (bug lama): membandingkan ke rata-rata panel bikin banyak false
+        positive, karena konten iklan NORMAL sering punya elemen saturasi
+        rendah yang sah (teks putih, background hitam, jersey putih pemain
+        bola, dll). Elemen itu low-saturation BUKAN karena rusak, tapi
+        memang desainnya begitu.
 
-        Returns:
-            List color error anomalies.
+        Sinyal yang lebih valid: 1 blok kecil yang TIBA-TIBA pudar padahal
+        semua tetangganya di sekitarnya tetap penuh warna -- itu baru
+        mencurigakan (potensi modul warna salah). Kalau area desaturated-nya
+        luas dan konsisten dengan tetangga (misal logo/teks besar), itu
+        wajar, bukan anomali.
         """
         anomalies: List[LEDAnomaly] = []
         h, w = hsv.shape[:2]
 
-        # Analisis hue distribution
         hue = hsv[:, :, 0]
         sat = hsv[:, :, 1]
 
-        # Grid analysis untuk warna
         block_size = 64
+        rows = h // block_size
+        cols = w // block_size
 
-        for by in range(0, h - block_size, block_size):
-            for bx in range(0, w - block_size, block_size):
-                # Cek apakah block ini di dalam LED content
-                block_mask = led_mask[by : by + block_size, bx : bx + block_size]
-                led_ratio = np.mean(block_mask)
-
-                # Hanya analisis jika > 70% block adalah LED content
+        # Pass 1: hitung statistik tiap blok grid
+        block_stats = {}
+        for r in range(rows):
+            for c in range(cols):
+                by, bx = r * block_size, c * block_size
+                block_mask = led_mask[by:by + block_size, bx:bx + block_size]
+                led_ratio = float(np.mean(block_mask))
                 if led_ratio < 0.7:
                     continue
+                block_hue = hue[by:by + block_size, bx:bx + block_size]
+                block_sat = sat[by:by + block_size, bx:bx + block_size]
+                block_stats[(r, c)] = {
+                    "hue": float(np.mean(block_hue)),
+                    "sat": float(np.mean(block_sat)),
+                }
 
-                block_hue = hue[by : by + block_size, bx : bx + block_size]
-                block_sat = sat[by : by + block_size, bx : bx + block_size]
-                hue_mean = np.mean(block_hue)
-                sat_mean = np.mean(block_sat)
+        # Pass 2: bandingkan tiap blok ke tetangga (8-neighbor)
+        for (r, c), stat in block_stats.items():
+            neighbor_sats = []
+            for dr in (-1, 0, 1):
+                for dc in (-1, 0, 1):
+                    if dr == 0 and dc == 0:
+                        continue
+                    key = (r + dr, c + dc)
+                    if key in block_stats:
+                        neighbor_sats.append(block_stats[key]["sat"])
 
-                # Cek jika saturasi rendah (warna pudar/abu-abu)
-                if sat_mean < 30 and panel.mean_saturation > 50:
-                    severity = 1.0 - (sat_mean / panel.mean_saturation)
-                    anomalies.append(
-                        LEDAnomaly(
-                            x=bx + panel.x,
-                            y=by + panel.y,
-                            width=block_size,
-                            height=block_size,
-                            anomaly_type="color_error",
-                            severity=severity,
-                            description=f"Low saturation at ({bx},{by})",
-                        )
+            if not neighbor_sats:
+                continue
+
+            neighbor_sat_mean = float(np.mean(neighbor_sats))
+
+            # Anomali kalau: tetangga cukup berwarna (bukan area monokrom
+            # yang memang luas) TAPI blok ini jauh lebih pudar dari mereka
+            is_anomaly = (
+                neighbor_sat_mean > 60          # tetangga memang berwarna/vivid
+                and stat["sat"] < neighbor_sat_mean * 0.35   # blok ini jauh lebih pudar
+                and stat["sat"] < 30            # dan secara absolut memang pudar
+            )
+
+            if is_anomaly:
+                by, bx = r * block_size, c * block_size
+                severity = 1.0 - (stat["sat"] / neighbor_sat_mean)
+                anomalies.append(
+                    LEDAnomaly(
+                        x=bx + panel.x,
+                        y=by + panel.y,
+                        width=block_size,
+                        height=block_size,
+                        anomaly_type="color_error",
+                        severity=min(severity, 1.0),
+                        description=f"Saturasi anomali di ({bx},{by}), tetangga={neighbor_sat_mean:.0f} vs blok={stat['sat']:.0f}",
                     )
+                )
 
+        return anomalies
+
+    def _detect_pixel_chaos(
+        self,
+        gray: np.ndarray,
+        hsv: np.ndarray,
+        panel: LEDPanelInfo,
+        led_mask: np.ndarray,
+    ) -> List[LEDAnomaly]:
+        """Deteksi area piksel kacau/glitch (modul rusak dengan noise warna acak).
+
+        Pendekatan: kombinasi hue_std tinggi + sat_std cukup + brightness rendah-sedang.
+        Modul rusak biasanya menampilkan warna acak (hue_std tinggi) di area yang
+        lebih redup — berbeda dari konten iklan berwarna cerah (teks, logo) yang
+        brightness-nya tinggi.
+
+        Catatan: tidak bisa membedakan glitch dari konten iklan berwarna cerah
+        secara reliabel. Untuk kasus tersebut, gunakan Temporal Detector.
+
+        Args:
+            gray: Grayscale LED region.
+            hsv: HSV LED region.
+            panel: Info panel LED.
+            led_mask: Mask area LED.
+
+        Returns:
+            List LEDAnomaly bertipe "pixel_chaos".
+        """
+        anomalies: List[LEDAnomaly] = []
+        h, w = gray.shape
+        block_size = 32
+
+        rows = h // block_size
+        cols = w // block_size
+
+        if rows == 0 or cols == 0:
+            return []
+
+        hue = hsv[:, :, 0].astype(np.float32)
+        sat = hsv[:, :, 1].astype(np.float32)
+
+        # Pass 1: hitung statistik semua blok yang ada di led_mask
+        block_stats: dict = {}
+        for r in range(rows):
+            for c in range(cols):
+                by, bx = r * block_size, c * block_size
+                block_mask = led_mask[by:by + block_size, bx:bx + block_size]
+                led_ratio = float(np.mean(block_mask))
+
+                if led_ratio < 0.5:
+                    continue
+
+                b_hue = hue[by:by + block_size, bx:bx + block_size]
+                b_sat = sat[by:by + block_size, bx:bx + block_size]
+                b_gray = gray[by:by + block_size, bx:bx + block_size]
+
+                block_stats[(r, c)] = {
+                    "hue_std": float(np.std(b_hue)),
+                    "sat_std": float(np.std(b_sat)),
+                    "brightness": float(np.mean(b_gray)),
+                    "bx": bx,
+                    "by": by,
+                }
+
+        if not block_stats:
+            return []
+
+        # Hitung median dan MAD hue_std di seluruh panel — robust terhadap outlier
+        all_hue_stds = np.array([s["hue_std"] for s in block_stats.values()])
+        median_hue_std = float(np.median(all_hue_stds))
+        mad_hue_std = float(np.median(np.abs(all_hue_stds - median_hue_std)))
+        chaos_threshold = max(median_hue_std + 2.5 * (1.4826 * mad_hue_std), 30.0)
+
+        # Brightness rata-rata panel untuk filter kontekstual
+        panel_brightness = float(
+            np.mean([s["brightness"] for s in block_stats.values()])
+        )
+
+        # Pass 2: flag blok mencurigakan
+        # Syarat: hue_std tinggi + sat_std cukup + brightness tidak terlalu tinggi
+        # Filter brightness tinggi menghilangkan teks/logo terang (false positive)
+        suspicious: set = set()
+        for (r, c), stat in block_stats.items():
+            if stat["hue_std"] <= chaos_threshold:
+                continue
+            # Brightness terlalu tinggi = kemungkinan teks/logo di area cerah
+            if stat["brightness"] > panel_brightness * 0.85:
+                continue
+            # sat_std minimum — memastikan ada variasi warna nyata
+            if stat["sat_std"] < 15:
+                continue
+            suspicious.add((r, c))
+
+        # Pass 3: filter cluster — blok isolasi di tepi konten bukan glitch
+        # Glitch nyata biasanya muncul sebagai cluster, bukan blok tunggal
+        confirmed_chaos: set = set()
+        for (r, c) in suspicious:
+            neighbor_suspicious = sum(
+                1 for dr in range(-2, 3) for dc in range(-2, 3)
+                if (dr, dc) != (0, 0) and (r + dr, c + dc) in suspicious
+            )
+            if neighbor_suspicious >= 2:
+                confirmed_chaos.add((r, c))
+
+        for (r, c) in confirmed_chaos:
+            stat = block_stats[(r, c)]
+            bx = stat["bx"]
+            by = stat["by"]
+            severity = min(stat["hue_std"] / 80.0, 1.0)
+
+            anomalies.append(
+                LEDAnomaly(
+                    x=bx + panel.x,
+                    y=by + panel.y,
+                    width=block_size,
+                    height=block_size,
+                    anomaly_type="pixel_chaos",
+                    severity=severity,
+                    description=(
+                        f"Pixel chaos di ({bx},{by}): "
+                        f"hue_std={stat['hue_std']:.1f} "
+                        f"(threshold={chaos_threshold:.1f}, "
+                        f"median_panel={median_hue_std:.1f})"
+                    ),
+                )
+            )
+
+        # Merge blok yang berdekatan menjadi satu region
+        return self._merge_chaos_anomalies(anomalies, block_size)
+
+    def _merge_chaos_anomalies(
+        self,
+        anomalies: List[LEDAnomaly],
+        block_size: int,
+    ) -> List[LEDAnomaly]:
+        """Merge blok chaos yang berdekatan menjadi satu region besar.
+
+        Args:
+            anomalies: List anomali pixel_chaos individual.
+            block_size: Ukuran blok.
+
+        Returns:
+            List anomali yang sudah di-merge.
+        """
+        if not anomalies:
+            return []
+
+        merged: List[LEDAnomaly] = []
+        used = [False] * len(anomalies)
+
+        for i, a1 in enumerate(anomalies):
+            if used[i]:
+                continue
+
+            group = [a1]
+            used[i] = True
+
+            for j, a2 in enumerate(anomalies):
+                if used[j]:
+                    continue
+                # Merge jika dalam jarak 2 blok
+                if (
+                    abs(a1.x - a2.x) <= block_size * 2
+                    and abs(a1.y - a2.y) <= block_size * 2
+                ):
+                    group.append(a2)
+                    used[j] = True
+
+            min_x = min(a.x for a in group)
+            min_y = min(a.y for a in group)
+            max_x = max(a.x + a.width for a in group)
+            max_y = max(a.y + a.height for a in group)
+            avg_severity = float(np.mean([a.severity for a in group]))
+
+            merged.append(
+                LEDAnomaly(
+                    x=min_x,
+                    y=min_y,
+                    width=max_x - min_x,
+                    height=max_y - min_y,
+                    anomaly_type="pixel_chaos",
+                    severity=avg_severity,
+                    description=f"Pixel chaos region ({len(group)} blocks)",
+                )
+            )
+
+        return merged
+
+    def _detect_horizontal_line_pattern(
+        self,
+        gray: np.ndarray,
+        hsv: np.ndarray,
+        panel: LEDPanelInfo,
+        led_mask: np.ndarray,
+    ) -> List[LEDAnomaly]:
+        """Deteksi modul glitch dengan pola baris horizontal berwarna acak.
+
+        Modul LED yang error seringkali menampilkan data corrupt berupa baris-baris
+        horizontal dengan warna berbeda-beda tiap baris (merah, biru, kuning, dll).
+        Ini berbeda dari line defect biasa yang hanya 1-2 garis gelap.
+
+        Sinyal kunci: area di mana brightness antar baris berubah drastis
+        (row-to-row variance sangat tinggi), terlokalisir di satu region.
+
+        Args:
+            gray: Grayscale LED region.
+            hsv: HSV LED region.
+            panel: Info panel LED.
+            led_mask: Mask area LED.
+
+        Returns:
+            List LEDAnomaly bertipe "module_glitch".
+        """
+        anomalies: List[LEDAnomaly] = []
+        h, w = gray.shape
+        
+        if h < 64 or w < 64:
+            return []
+
+        # Hitung mean brightness tiap baris
+        row_means = np.mean(gray, axis=1)
+        
+        # Hitung absolute diff antar baris berurutan
+        row_diffs = np.abs(np.diff(row_means))
+        
+        # Sliding window: cari area 32-64 baris di mana row_diff sangat tinggi
+        window_size = 32
+        high_diff_regions = []
+        
+        for y in range(0, h - window_size, 8):
+            window_diff = row_diffs[y:y+window_size]
+            avg_diff = np.mean(window_diff)
+            
+            # Threshold: avg_diff > 3.0 menandakan baris sangat bervariasi
+            if avg_diff > 3.0:
+                high_diff_regions.append((y, y + window_size, avg_diff))
+        
+        # Untuk tiap region dengan high diff, cek apakah terlokalisir secara horizontal
+        # (hanya sebagian kolom, bukan seluruh lebar panel)
+        for y_start, y_end, avg_diff in high_diff_regions:
+            # Bagi lebar panel jadi beberapa bagian, cek kolom mana yang punya diff tinggi
+            num_sections = 8
+            section_width = w // num_sections
+            section_diffs = []
+            
+            for sx in range(num_sections):
+                x_start = sx * section_width
+                x_end = (sx + 1) * section_width
+                section = gray[y_start:y_end, x_start:x_end]
+                section_row_means = np.mean(section, axis=1)
+                section_diff = np.mean(np.abs(np.diff(section_row_means)))
+                section_diffs.append((sx, section_diff))
+            
+            # Cari section dengan diff tertinggi
+            max_section_idx, max_section_diff = max(section_diffs, key=lambda x: x[1])
+            
+            # Jika diff-nya sangat tinggi (> 5.0) dan terlokalisir (tidak semua section tinggi)
+            other_sections_avg = np.mean([d for i, d in section_diffs if i != max_section_idx])
+            
+            is_localized = max_section_diff > 5.0 and max_section_diff > other_sections_avg * 2.0
+            
+            if is_localized:
+                x_anomaly = max_section_idx * section_width
+                w_anomaly = section_width * 2  # span 2 section untuk coverage
+                h_anomaly = y_end - y_start
+                
+                # Cek apakah region ini ada di dalam led_mask
+                anomaly_mask = led_mask[y_start:y_end, x_anomaly:min(x_anomaly+w_anomaly, w)]
+                if np.mean(anomaly_mask) < 0.3:
+                    continue
+                
+                severity = min(max_section_diff / 10.0, 1.0)
+                
+                anomalies.append(
+                    LEDAnomaly(
+                        x=x_anomaly + panel.x,
+                        y=y_start + panel.y,
+                        width=min(w_anomaly, w - x_anomaly),
+                        height=h_anomaly,
+                        anomaly_type="module_glitch",
+                        severity=severity,
+                        description=(
+                            f"Module glitch di ({x_anomaly},{y_start}): "
+                            f"row_diff={max_section_diff:.1f}"
+                        ),
+                    )
+                )
+        
         return anomalies
 
     def _filter_anomalies_in_panel(
@@ -964,12 +1042,7 @@ class LEDAnalyzer(BaseDetector):
         anomalies: List[LEDAnomaly],
         panel: LEDPanelInfo,
     ) -> List[LEDAnomaly]:
-        """Filter anomali — hanya yang benar-benar di dalam LED content.
-
-        Metode filtering:
-        1. Pastikan anomali di dalam bounding box panel
-        2. Hitung persentase overlap dengan area LED
-        3. Hanya pertahankan anomali yang significant
+        """Filter anomali — hanya yang SEPENUHNYA di dalam panel LED.
 
         Args:
             anomalies: List anomali.
@@ -981,29 +1054,29 @@ class LEDAnalyzer(BaseDetector):
         filtered: List[LEDAnomaly] = []
         panel_area = panel.width * panel.height
 
-        for a in anomalies:
-            # 1. Pastikan anomali di dalam bounding box panel
-            a_center_x = a.x + a.width // 2
-            a_center_y = a.y + a.height // 2
+        # Panel boundaries
+        px1 = panel.x
+        py1 = panel.y
+        px2 = panel.x + panel.width
+        py2 = panel.y + panel.height
 
-            # Cek apakah center anomali di dalam panel
-            if not (
-                panel.x <= a_center_x <= panel.x + panel.width
-                and panel.y <= a_center_y <= panel.y + panel.height
-            ):
+        for a in anomalies:
+            # Seluruh anomali harus di dalam panel
+            ax1 = a.x
+            ay1 = a.y
+            ax2 = a.x + a.width
+            ay2 = a.y + a.height
+
+            if ax1 < px1 or ay1 < py1 or ax2 > px2 or ay2 > py2:
                 continue
 
-            # 2. Hitung area anomali
+            # Filter anomali terlalu kecil (noise)
             anomaly_area = a.width * a.height
-
-            # 3. Filter berdasarkan ukuran relatif terhadap panel
-            # Anomali terlalu kecil (< 0.1% panel) = noise
             if anomaly_area < panel_area * 0.001:
                 continue
 
-            # 4. Filter anomali yang terlalu besar (> 80% panel)
-            # Kemungkinan false positive
-            if anomaly_area > panel_area * 0.8:
+            # Filter anomali terlalu besar (false positive)
+            if anomaly_area > panel_area * 0.5:
                 continue
 
             filtered.append(a)
@@ -1015,26 +1088,14 @@ class LEDAnalyzer(BaseDetector):
         anomalies: List[LEDAnomaly],
         panel: LEDPanelInfo,
     ) -> float:
-        """Hitung skor anomali.
-
-        Args:
-            anomalies: List anomali.
-            panel: Info panel LED.
-
-        Returns:
-            Skor 0.0 - 1.0.
-        """
         if not anomalies:
             return 0.0
 
-        # Hitung total area anomali
         total_area = panel.width * panel.height
         anomaly_area = sum(a.width * a.height for a in anomalies)
 
-        # Hitung rata-rata severity
         avg_severity = np.mean([a.severity for a in anomalies])
 
-        # Skor = kombinasi area dan severity
         area_ratio = anomaly_area / total_area if total_area > 0 else 0
         score = (area_ratio * 0.5 + avg_severity * 0.5) * 2
 
@@ -1046,19 +1107,8 @@ class LEDAnalyzer(BaseDetector):
         panel: LEDPanelInfo,
         anomalies: List[LEDAnomaly],
     ) -> np.ndarray:
-        """Buat visualisasi hasil analisis.
-
-        Args:
-            image: Gambar asli.
-            panel: Info panel LED.
-            anomalies: List anomali.
-
-        Returns:
-            Gambar yang sudah dianotasi.
-        """
         annotated = image.copy()
 
-        # Gambar panel LED (hijau)
         cv2.rectangle(
             annotated,
             (panel.x, panel.y),
@@ -1067,7 +1117,6 @@ class LEDAnalyzer(BaseDetector):
             2,
         )
 
-        # Tandai panel info
         cv2.putText(
             annotated,
             f"LED Panel ({panel.width}x{panel.height})",
@@ -1078,12 +1127,14 @@ class LEDAnalyzer(BaseDetector):
             1,
         )
 
-        # Gambar anomali berdasarkan tipe
         colors = {
-            "blocking": (0, 0, 255),  # Merah
-            "line_defect": (0, 165, 255),  # Oranye
-            "dead_pixel_block": (0, 0, 200),  # Merah gelap
-            "color_error": (255, 0, 255),  # Magenta
+            "blocking": (0, 0, 255),
+            "line_defect": (0, 165, 255),
+            "dead_pixel_block": (0, 0, 200),
+            "color_error": (255, 0, 255),
+            "pixel_chaos": (0, 255, 255),  # Cyan untuk glitch/chaos
+            "flat_content": (255, 128, 0),
+            "module_glitch": (0, 255, 255),  # Cyan untuk module glitch
         }
 
         for anomaly in anomalies:
@@ -1113,28 +1164,19 @@ class LEDAnalyzer(BaseDetector):
         anomalies: List[LEDAnomaly],
         panel: LEDPanelInfo,
     ) -> str:
-        """Generate pesan deskriptif.
-
-        Args:
-            score: Skor anomali.
-            anomalies: List anomali.
-            panel: Info panel LED.
-
-        Returns:
-            Pesan deskriptif.
-        """
         if not anomalies:
             return (
                 f"Panel LED terdeteksi ({panel.width}x{panel.height}). "
                 f"Tidak ada anomali."
             )
 
-        # Hitung per tipe
         blocking = [a for a in anomalies if a.anomaly_type == "blocking"]
         flat = [a for a in anomalies if a.anomaly_type == "flat_content"]
         lines = [a for a in anomalies if a.anomaly_type == "line_defect"]
         dead = [a for a in anomalies if a.anomaly_type == "dead_pixel_block"]
         color = [a for a in anomalies if a.anomaly_type == "color_error"]
+        chaos = [a for a in anomalies if a.anomaly_type == "pixel_chaos"]
+        glitch = [a for a in anomalies if a.anomaly_type == "module_glitch"]
 
         parts = []
         if blocking:
@@ -1147,6 +1189,10 @@ class LEDAnalyzer(BaseDetector):
             parts.append(f"{len(dead)} dead blocks")
         if color:
             parts.append(f"{len(color)} color errors")
+        if chaos:
+            parts.append(f"{len(chaos)} pixel chaos (modul rusak/glitch)")
+        if glitch:
+            parts.append(f"{len(glitch)} module glitch (baris warna acak)")
 
         return (
             f"Panel LED terdeteksi ({panel.width}x{panel.height}). "

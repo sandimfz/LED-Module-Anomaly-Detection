@@ -29,6 +29,9 @@ class Config:
     # Default configuration untuk lokasi baru
     DEFAULT_LOCATION: LocationConfig = LocationConfig(name="default")
 
+    # Cache session paths supaya satu runtime = satu folder
+    _session_paths: Dict[str, Path] = {}
+
     @classmethod
     def get_location_config(cls, location: str) -> LocationConfig:
         """Ambil konfigurasi untuk lokasi tertentu.
@@ -47,6 +50,11 @@ class Config:
             ),
             "lengkong": LocationConfig(
                 name="lengkong",
+                grid_rows=12,
+                grid_cols=16,
+            ),
+            "paskal": LocationConfig(
+                name="paskal",
                 grid_rows=12,
                 grid_cols=16,
             ),
@@ -78,6 +86,30 @@ class Config:
         return cls.MODELS_ROOT / location
 
     @classmethod
+    def get_session_path(cls, location: str) -> Path:
+        """Ambil/buat session folder berdasarkan tanggal & waktu.
+
+        Satu runtime = satu folder. Tidak dibuat baru setiap kali dipanggil.
+
+        Struktur: output/<location>/<YYYY-MM-DD>/<HH-MM-SS>/
+
+        Args:
+            location: Nama lokasi.
+
+        Returns:
+            Path ke session folder.
+        """
+        if location not in cls._session_paths:
+            now = datetime.now()
+            date_folder = now.strftime("%Y-%m-%d")
+            time_folder = now.strftime("%H-%M-%S")
+            path = cls.OUTPUT_ROOT / location / date_folder / time_folder
+            path.mkdir(parents=True, exist_ok=True)
+            cls._session_paths[location] = path
+
+        return cls._session_paths[location]
+
+    @classmethod
     def get_output_path(
         cls,
         location: str,
@@ -86,10 +118,10 @@ class Config:
         """Ambil path output untuk lokasi.
 
         Struktur folder:
-            output/<location>/good/      <- Gambar normal
-            output/<location>/warning/   <- Gambar warning
-            output/<location>/critical/  <- Gambar anomali
-            output/<location>/reports/   <- JSON reports
+            output/<location>/<date>/<time>/good/
+            output/<location>/<date>/<time>/warning/
+            output/<location>/<date>/<time>/critical/
+            output/<location>/<date>/<time>/reports/
 
         Args:
             location: Nama lokasi.
@@ -99,14 +131,15 @@ class Config:
         Returns:
             Path ke folder output.
         """
+        session = cls.get_session_path(location)
+
         if status:
-            # Validasi status
             valid_statuses = ("good", "warning", "critical")
             if status not in valid_statuses:
                 status = "good"
-            path = cls.OUTPUT_ROOT / location / status
+            path = session / status
         else:
-            path = cls.OUTPUT_ROOT / location
+            path = session
 
         path.mkdir(parents=True, exist_ok=True)
         return path
@@ -121,7 +154,8 @@ class Config:
         Returns:
             Path ke folder reports.
         """
-        path = cls.OUTPUT_ROOT / location / "reports"
+        session = cls.get_session_path(location)
+        path = session / "reports"
         path.mkdir(parents=True, exist_ok=True)
         return path
 
