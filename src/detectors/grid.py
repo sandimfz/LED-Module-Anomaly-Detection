@@ -48,6 +48,50 @@ class GridDetector(BaseDetector):
             config: Konfigurasi lokasi.
         """
         super().__init__(config)
+        # Adaptive thresholds (set per-call via _compute_adaptive_thresholds)
+        self._active_dark_delta = config.dark_delta_threshold
+        self._active_brightness_threshold = config.dead_brightness_threshold
+        self._active_flat_ratio = config.flat_ratio_threshold
+        self._active_color_delta = config.color_hue_delta_threshold
+
+    def _compute_adaptive_thresholds(self, image: np.ndarray) -> None:
+        """Compute adaptive thresholds based on global image statistics.
+
+        This prevents false positives on varied content by making
+        thresholds proportional to the overall brightness and contrast.
+
+        Args:
+            image: Input BGR image.
+        """
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        global_mean = float(np.mean(gray))
+        global_std = float(np.std(gray))
+
+        # Adaptive dark threshold: stricter when content is naturally varied
+        self._active_dark_delta = max(
+            self.config.dark_delta_threshold,
+            global_std * 0.5,  # At least 50% of global std
+        )
+
+        # Adaptive brightness threshold: scale with global mean
+        self._active_brightness_threshold = max(
+            self.config.dead_brightness_threshold,
+            global_mean * 0.2,  # At least 20% of global mean
+        )
+
+        # Adaptive flat ratio: more tolerant when content has low std
+        self._active_flat_ratio = min(
+            self.config.flat_ratio_threshold,
+            max(0.15, global_std / 50.0),  # Scale with content variation
+        )
+
+        # Adaptive color threshold: stricter when saturated colors present
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        sat_mean = float(np.mean(hsv[:, :, 1]))
+        self._active_color_delta = max(
+            self.config.color_hue_delta_threshold,
+            sat_mean * 0.3,  # At least 30% of mean saturation
+        )
 
     def detect(
         self,
@@ -63,6 +107,9 @@ class GridDetector(BaseDetector):
         Returns:
             DetectionResult.
         """
+        # Compute adaptive thresholds before analysis
+        self._compute_adaptive_thresholds(image)
+
         grid = extract_grid_stats(
             image,
             self.config.grid_rows,
@@ -153,6 +200,9 @@ class GridDetector(BaseDetector):
     ) -> bool:
         """Cek apakah cell gelap dari tetangga.
 
+        Menggunakan adaptive threshold yang sudah dihitung
+        berdasarkan statistik global gambar.
+
         Args:
             stat: Statistik cell.
             neighbor: Statistik tetangga.
@@ -161,10 +211,10 @@ class GridDetector(BaseDetector):
             True jika dark anomaly.
         """
         return (
-            neighbor["brightness"] >= self.config.dead_brightness_threshold
+            neighbor["brightness"] >= self._active_brightness_threshold
             and (
                 neighbor["brightness"] - stat["brightness"]
-                >= self.config.dark_delta_threshold
+                >= self._active_dark_delta
             )
         )
 
@@ -184,9 +234,9 @@ class GridDetector(BaseDetector):
         """
         return (
             neighbor["std"] > 0
-            and neighbor["brightness"] >= self.config.dead_brightness_threshold
+            and neighbor["brightness"] >= self._active_brightness_threshold
             and (stat["std"] / neighbor["std"])
-            <= self.config.flat_ratio_threshold
+            <= self._active_flat_ratio
         )
 
     def _check_color_anomaly(
@@ -204,10 +254,10 @@ class GridDetector(BaseDetector):
             True jika color anomaly.
         """
         return (
-            neighbor["brightness"] >= self.config.dead_brightness_threshold
-            and stat["brightness"] >= self.config.dead_brightness_threshold
+            neighbor["brightness"] >= self._active_brightness_threshold
+            and stat["brightness"] >= self._active_brightness_threshold
             and hue_delta(stat["hue"], neighbor["hue"])
-            >= self.config.color_hue_delta_threshold
+            >= self._active_color_delta
         )
 
     def _annotate_image(

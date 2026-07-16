@@ -1,3 +1,4 @@
+.vscode/
 /helper
 *.md
 /.claude
@@ -6,8 +7,13 @@ __pycache__/
 */__pycache__/
 *.pyc
 *.json
-*/output
+/output
 /.agents
 *.jpg
+*.jpeg
+*.png
 /sample
-/graphify_out
+/graphify-out
+.commandcode
+/venv
+models/*

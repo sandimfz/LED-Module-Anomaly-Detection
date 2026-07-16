@@ -29,6 +29,8 @@ class DarkSpotDetector(BaseDetector):
         led_sat_threshold: Threshold saturasi untuk deteksi area LED.
         led_bright_threshold: Threshold brightness untuk area LED.
         dark_ratio: Rasio brightness untuk dark spot (terhadap mean LED).
+        threshold_k: Standard deviations below mean for adaptive threshold.
+        min_absolute_threshold: Absolute minimum dark threshold.
         min_spot_area: Minimal area dark spot (pixel).
     """
 
@@ -38,6 +40,7 @@ class DarkSpotDetector(BaseDetector):
         led_sat_threshold: float = 50.0,
         led_bright_threshold: float = 80.0,
         dark_ratio: float = 0.25,
+        threshold_k: float = 1.5,
         min_spot_area: int = 50,
     ) -> None:
         """Initialize dark spot detector.
@@ -47,12 +50,15 @@ class DarkSpotDetector(BaseDetector):
             led_sat_threshold: Threshold saturasi untuk area LED.
             led_bright_threshold: Threshold brightness untuk area LED.
             dark_ratio: Rasio brightness untuk dark spot.
+            threshold_k: Standard deviations below mean for adaptive
+                threshold. Higher = more sensitive to dark spots.
             min_spot_area: Minimal luas dark spot.
         """
         super().__init__(config)
         self.led_sat_threshold = led_sat_threshold
         self.led_bright_threshold = led_bright_threshold
         self.dark_ratio = dark_ratio
+        self.threshold_k = threshold_k
         self.min_spot_area = min_spot_area
 
     def detect(
@@ -101,9 +107,19 @@ class DarkSpotDetector(BaseDetector):
         # Step 4: Crop area LED
         led_panel = gray[ly : ly + lh, lx : lx + lw]
         led_mean = float(np.mean(led_panel))
+        led_std = float(np.std(led_panel))
 
         # Step 5: Cari dark spots di dalam LED panel
-        dark_threshold = led_mean * self.dark_ratio
+        # Adaptive threshold: gabungan ratio-based dan std-based.
+        # - ratio-based: tangkap area yang sangat gelap relatif ke mean
+        # - std-based: tangkap area yang signifikan lebih gelap dari mayoritas
+        # Keduanya di-max dengan 30 (absolute minimum) untuk skip area
+        # yang benar2 hitam pekat (non-LED/bezel).
+        dark_threshold = max(
+            led_mean * self.dark_ratio,
+            led_mean - self.threshold_k * led_std,
+            30,
+        )
         dark_in_panel = led_panel < dark_threshold
 
         # Step 6: Cleanup morphological
@@ -131,10 +147,14 @@ class DarkSpotDetector(BaseDetector):
                 dark_spots.append((orig_x, orig_y, sw, sh))
                 total_dark_area += area
 
-        # Step 9: Hitung skor
+        # Step 9: Hitung skor — was min(total_dark_area / led_area * 10.0, 1.0)
+        # yang artinya 10% dark area → score 1.0 (terlalu agresif).
+        # Sekarang: dark area 50% → score ~0.5, scale non-linear.
         led_area = float(lw * lh)
         if led_area > 0:
-            score = min(total_dark_area / led_area * 10.0, 1.0)
+            dark_ratio_score = total_dark_area / led_area
+            # Non-linear scaling: 50% dark area → 0.5, 80% → ~0.8
+            score = min(dark_ratio_score, 1.0)
         else:
             score = 0.0
 

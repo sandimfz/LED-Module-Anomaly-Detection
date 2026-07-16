@@ -17,7 +17,6 @@ class Config:
         DATASET_ROOT: Directory dataset.
         MODELS_ROOT: Directory model checkpoints.
         OUTPUT_ROOT: Directory output results.
-        LOCATIONS: Konfigurasi per lokasi.
     """
 
     # Auto-detect project root dari lokasi file ini
@@ -29,8 +28,8 @@ class Config:
     # Default configuration untuk lokasi baru
     DEFAULT_LOCATION: LocationConfig = LocationConfig(name="default")
 
-    # Cache session paths supaya satu runtime = satu folder
-    _session_paths: Dict[str, Path] = {}
+    # Cache session path supaya satu runtime = satu folder
+    _session_path: Optional[Path] = None
 
     @classmethod
     def get_location_config(cls, location: str) -> LocationConfig:
@@ -47,6 +46,14 @@ class Config:
                 name="sigma_cirebon",
                 grid_rows=12,
                 grid_cols=16,
+                # Format: TL, TR, BR, BL — untuk resolusi 1920x1080
+                screen_points=[
+                    [624, 102],    # Top-Left
+                    [1832, 32],    # Top-Right
+                    [1761, 544],   # Bottom-Right
+                    [786, 1012],   # Bottom-Left
+                ],
+                screen_resolution="1920x1080",
             ),
             "lengkong": LocationConfig(
                 name="lengkong",
@@ -55,17 +62,34 @@ class Config:
                 # 4 titik corner LED screen untuk perspective transform
                 # Format: TL, TR, BR, BL — untuk resolusi 1280x720
                 screen_points=[
-                    [327, 237],   # Top-Left
-                    [426, 697],   # Top-Right
-                    [997, 445],   # Bottom-Right
-                    [1071, 172],  # Bottom-Left
+                    [313, 240],   # Top-Left
+                    [1079, 169],  # Top-Right
+                    [1008, 448],  # Bottom-Right
+                    [422, 700],   # Bottom-Left
                 ],
                 screen_resolution="1280x720",
+                # Screen points untuk resolusi berbeda (kalibrasi manual)
+                screen_points_map={
+                    "1920x1080": [
+                        [490, 356],   # Top-Left
+                        [1598, 256],  # Top-Right
+                        [1499, 670],  # Bottom-Right
+                        [634, 1047],  # Bottom-Left
+                    ],
+                },
             ),
             "paskal": LocationConfig(
                 name="paskal",
                 grid_rows=12,
                 grid_cols=16,
+                # Format: TL, TR, BR, BL — untuk resolusi 1280x720
+                screen_points=[
+                    [977, 1],      # Top-Left
+                    [926, 719],    # Top-Right
+                    [135, 391],    # Bottom-Right
+                    [60, 27],      # Bottom-Left
+                ],
+                screen_resolution="1280x720",
             ),
         }
         return configs.get(location, cls.DEFAULT_LOCATION)
@@ -100,23 +124,23 @@ class Config:
 
         Satu runtime = satu folder. Tidak dibuat baru setiap kali dipanggil.
 
-        Struktur: output/<location>/<YYYY-MM-DD>/<HH-MM-SS>/
+        Struktur output/<DD-MM-YYYY>/<HH>/hasilnya/
 
         Args:
-            location: Nama lokasi.
+            location: Nama lokasi (tidak dipakai di path, hanya tracking).
 
         Returns:
-            Path ke session folder.
+            Path ke session folder hasilnya.
         """
-        if location not in cls._session_paths:
+        if cls._session_path is None:
             now = datetime.now()
-            date_folder = now.strftime("%Y-%m-%d")
-            time_folder = now.strftime("%H-%M-%S")
-            path = cls.OUTPUT_ROOT / location / date_folder / time_folder
+            date_folder = now.strftime("%d-%m-%Y")
+            hour_folder = now.strftime("%H")
+            path = cls.OUTPUT_ROOT / date_folder / hour_folder
             path.mkdir(parents=True, exist_ok=True)
-            cls._session_paths[location] = path
+            cls._session_path = path
 
-        return cls._session_paths[location]
+        return cls._session_path
 
     @classmethod
     def get_output_path(
@@ -127,29 +151,23 @@ class Config:
         """Ambil path output untuk lokasi.
 
         Struktur folder:
-            output/<location>/<date>/<time>/good/
-            output/<location>/<date>/<time>/warning/
-            output/<location>/<date>/<time>/critical/
-            output/<location>/<date>/<time>/reports/
+            output/<DD-MM-YYYY>/<HH>/good/   — untuk status normal
+            output/<DD-MM-YYYY>/<HH>/bad/     — untuk warning / critical
 
         Args:
             location: Nama lokasi.
-            status: Status deteksi (good, warning, critical).
-                    Jika None, return path base lokasi.
+            status: Status deteksi (normal, warning, critical).
+                    normal → good/, lainnya → bad/.
 
         Returns:
             Path ke folder output.
         """
         session = cls.get_session_path(location)
-
         if status:
-            valid_statuses = ("good", "warning", "critical")
-            if status not in valid_statuses:
-                status = "good"
-            path = session / status
+            folder = "good" if status == "normal" else "bad"
+            path = session / folder
         else:
             path = session
-
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -157,16 +175,17 @@ class Config:
     def get_report_path(cls, location: str) -> Path:
         """Ambil path untuk reports.
 
+        Report ada di folder jam, sama dengan gambar.
+
         Args:
             location: Nama lokasi.
 
         Returns:
-            Path ke folder reports.
+            Path ke folder jam.
         """
         session = cls.get_session_path(location)
-        path = session / "reports"
-        path.mkdir(parents=True, exist_ok=True)
-        return path
+        session.mkdir(parents=True, exist_ok=True)
+        return session
 
     @classmethod
     def ensure_directories(cls) -> None:

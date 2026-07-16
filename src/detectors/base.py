@@ -102,8 +102,9 @@ class BaseDetector(ABC):
         if total_cells == 0:
             return 0.0
         ratio = flagged_cells / total_cells
-        # Skor di-scale supaya threshold lebih reasonable
-        return min(ratio * 3.0, 1.0)
+        # Linear scale: 50% cells flagged → score 0.5
+        # Was ratio * 3.0 which meant 33% flagged = score 1.0 (too aggressive)
+        return min(ratio, 1.0)
 
     def _determine_level(self, score: float) -> str:
         """Tentukan level anomali berdasarkan skor.

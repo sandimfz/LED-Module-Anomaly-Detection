@@ -45,6 +45,9 @@ class LocationConfig:
     # Resolusi referensi harus sesuai dengan gambar asli
     screen_points: Optional[List[List[int]]] = None
     screen_resolution: Optional[str] = None  # misal: "1280x720"
+    # Map resolusi ke screen_points untuk resolusi berbeda
+    # Format: {"1920x1080": [[x,y],...], "1280x720": [[x,y],...]}
+    screen_points_map: Optional[dict] = None
 
 
 @dataclass

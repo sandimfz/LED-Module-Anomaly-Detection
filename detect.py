@@ -146,12 +146,17 @@ def main() -> None:
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Gunakan semua detektor",
+        help="Gunakan semua detektor termasuk PatchCore (butuh model terlatih)",
+    )
+    parser.add_argument(
+        "--basic",
+        action="store_true",
+        help="Gunakan detektor basic saja (grid + dark_spot), tanpa LED Analyzer",
     )
     parser.add_argument(
         "--analyzer",
         action="store_true",
-        help="Gunakan LED Analyzer (paling akurat)",
+        help="[DEPRECATED] Sekarang default. Gunakan --basic untuk fallback.",
     )
     parser.add_argument(
         "--no-patchcore",
@@ -177,18 +182,21 @@ def main() -> None:
     # Setup pipeline
     from src.detectors.led_analyzer import LEDAnalyzer
 
+    # Default: LED Analyzer aktif, grid + dark_spot juga aktif sebagai pelengkap.
+    # --basic: nonaktifkan LED Analyzer, hanya grid + dark_spot.
+    # --analyzer: deprecated no-op (LED Analyzer sudah default ON).
+    use_basic = args.basic
+
     pipeline = EnsemblePipeline(
         location=args.location,
-        use_grid=not args.analyzer,  # Nonaktifkan grid jika pakai analyzer
-        use_dark_spot=not args.analyzer,  # Nonaktifkan dark_spot jika pakai analyzer
+        use_grid=True,
+        use_dark_spot=True,
         use_temporal=not args.no_temporal and args.frames is not None,
         use_patchcore=args.all and not args.no_patchcore,
     )
 
-    # Tambah LED Analyzer jika diminta
-    if args.analyzer:
-        from src.core.config import Config
-
+    # Tambah LED Analyzer (default ON, kecuali --basic)
+    if not use_basic:
         config = Config.get_location_config(args.location)
         pipeline._led_analyzer = LEDAnalyzer(config)
         pipeline.use_led_analyzer = True

@@ -13,13 +13,12 @@ Kekurangan:
 - Threshold perlu kalibrasi dengan data bad
 """
 
+import tempfile
 import warnings
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
-import torch
 
 from src.core.config import Config
 from src.core.types import (
@@ -51,6 +50,7 @@ class PatchCoreDetector(BaseDetector):
         super().__init__(config)
         self._model = None
         self._engine = None
+        self._checkpoint_path: Path | None = None
 
     @property
     def is_loaded(self) -> bool:
@@ -67,10 +67,10 @@ class PatchCoreDetector(BaseDetector):
         from anomalib.models import Patchcore
 
         search_dir = Config.get_model_path(self.config.name)
-        checkpoint_path = self._find_checkpoint(search_dir)
+        self._checkpoint_path = self._find_checkpoint(search_dir)
 
         self._model = Patchcore.load_from_checkpoint(
-            str(checkpoint_path),
+            str(self._checkpoint_path),
             weights_only=False,
         )
         self._engine = Engine(accelerator="cpu", devices=1)
@@ -117,17 +117,25 @@ class PatchCoreDetector(BaseDetector):
 
         from anomalib.data import PredictDataset
 
-        dataset = PredictDataset(path=image_path)
-        predictions = self._engine.predict(
-            model=self._model,
-            dataset=dataset,
-        )
+        # PredictDataset reads from disk — write the (possibly cropped)
+        # image array so PatchCore sees the same input as OpenCV detectors.
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp_path = tmp.name
+        try:
+            cv2.imwrite(tmp_path, image)
+            dataset = PredictDataset(path=tmp_path)
+            predictions = self._engine.predict(
+                model=self._model,
+                dataset=dataset,
+                ckpt_path=str(self._checkpoint_path),
+            )
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
 
         pred = predictions[0]
         score = float(pred.pred_score)
         anomaly_map = pred.anomaly_map.squeeze().cpu().numpy()
 
-        # Generate heatmap overlay
         overlay = create_heatmap_overlay(image, anomaly_map)
         status = self._determine_level(score)
         output_path = self.get_output_path(image_path, "patchcore", status)
