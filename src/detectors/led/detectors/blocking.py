@@ -45,8 +45,11 @@ def detect_blocking(
     led_mean = np.mean(led_pixels)
     led_std = np.std(led_pixels)
 
-    threshold_relative = max(led_mean - 2 * led_std, 30)
-    threshold_absolute = 60
+    # Use higher std multiplier (2.5) to avoid triggering on
+    # normal content with low contrast (soccer field, etc.)
+    # Higher absolute threshold (80) also helps avoid false positives.
+    threshold_relative = max(led_mean - 2.5 * led_std, 30)
+    threshold_absolute = 80
     threshold = max(threshold_relative, threshold_absolute)
 
     # Use panel_mask as base to ensure dark areas outside
@@ -132,27 +135,30 @@ def _classify_blocking(
     if area_ratio > 0.15 and contrast_score > 0.3:
         return True, f"Large blocking ({area_ratio*100:.0f}% panel, contrast={contrast_score:.2f})"
 
-    # Horizontal bar pattern
-    if cw > w * 0.4 and ch > h * 0.05:
+    # Horizontal bar pattern (narrow bar across screen = blocking)
+    # Require higher aspect ratio to avoid flagging normal content transitions
+    if cw > w * 0.5 and ch < h * 0.15:
         return True, f"Horizontal blocking ({cw}x{ch}px)"
 
-    # Vertical bar pattern
-    if ch > h * 0.4 and cw > w * 0.05:
+    # Vertical bar pattern (narrow bar down screen = blocking)
+    # Require higher aspect ratio to avoid flagging normal content transitions
+    if ch > h * 0.5 and cw < w * 0.15:
         return True, f"Vertical blocking ({cw}x{ch}px)"
 
-    # Large dark area (> 3% panel)
-    if area_ratio > 0.03:
-        return True, f"Large dark area ({area_ratio*100:.0f}% panel)"
+    # Large dark area - only flag if has high contrast with surroundings
+    # (normal content like soccer field has low contrast → not blocking)
+    if area_ratio > 0.05 and contrast_score > 0.4:
+        return True, f"Large dark area ({area_ratio*100:.0f}% panel, contrast={contrast_score:.2f})"
 
     # Partial blocking with decent contrast
-    if contrast_score > 0.4:
+    if contrast_score > 0.5:
         if cw > w * 0.15 and ch > h * 0.08:
             return True, f"Partial blocking (contrast={contrast_score:.2f})"
         if ch > h * 0.15 and cw > w * 0.08:
             return True, f"Partial blocking (contrast={contrast_score:.2f})"
 
-    # Moderate area with very high contrast
-    if area_ratio > 0.01 and contrast_score > 0.5:
+    # Small area with very high contrast (dead module)
+    if area_ratio > 0.01 and contrast_score > 0.6:
         return True, f"Dark region (contrast={contrast_score:.2f})"
 
     return False, ""

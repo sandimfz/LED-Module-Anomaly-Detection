@@ -108,13 +108,18 @@ def detect_color_errors_in_mask(
 
         # 2. Hue shift: dominant hue differs greatly from neighbors.
         # Hue is 0-180 in OpenCV. Circular distance used.
+        # Require ≥3 saturated neighbors to reduce false positives
+        # on content with varied colors (green soccer vs white text).
         n_hues = [n["hue"] for n in neighbors if n["sat"] > 40]
         hue_shift = False
-        if n_hues and stat["sat"] > 40 and stat["val"] > 60:
+        if len(n_hues) >= 3 and stat["sat"] > 40 and stat["val"] > 60:
             n_hue_median = float(np.median(n_hues))
             diff = abs(stat["hue"] - n_hue_median)
             circ_diff = min(diff, 180.0 - diff)
-            if circ_diff > 40:
+            # 55° threshold avoids false positives on normal content
+            # (green≈70 vs brown≈25 = 45° diff, which is normal)
+            # Actual module errors typically show >70° hue shift.
+            if circ_diff > 55:
                 hue_shift = True
 
         if sat_drop or hue_shift:

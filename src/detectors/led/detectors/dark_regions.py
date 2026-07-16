@@ -47,7 +47,7 @@ def detect_dark_regions_by_local_contrast(
     if cell_h < 8 or cell_w < 8:
         return []
 
-    dark_threshold = global_mean - 1.5 * global_std
+    dark_threshold = global_mean - 2.5 * global_std
 
     dark_cells = _find_dark_cells(
         gray, led_mask, grid_r, grid_c, cell_h, cell_w, dark_threshold
