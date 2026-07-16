@@ -175,8 +175,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "preprocess_dataset",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 5,
+      "community_name": "Path",
       "norm_label": "preprocess_dataset.py"
     },
     {
@@ -186,8 +186,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "preprocess_dataset_crop_image",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 5,
+      "community_name": "Path",
       "norm_label": "crop_image()"
     },
     {
@@ -197,8 +197,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "preprocess_dataset_py_ndarray",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 5,
+      "community_name": "Path",
       "norm_label": "ndarray"
     },
     {
@@ -208,8 +208,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "preprocess_dataset_main",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 5,
+      "community_name": "Path",
       "norm_label": "main()"
     },
     {
@@ -219,8 +219,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "preprocess_dataset_rationale_28",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 5,
+      "community_name": "Path",
       "norm_label": "apply perspective crop to image.      args:         image: input bgr image."
     },
     {
@@ -230,8 +230,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "preprocess_dataset_rationale_61",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 5,
+      "community_name": "Path",
       "norm_label": "preprocess dataset for a location.      args:         location: location name."
     },
     {
@@ -307,8 +307,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_core_config_config_get_location_config",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 0,
+      "community_name": "DetectionResult",
       "norm_label": ".get_location_config()"
     },
     {
@@ -417,8 +417,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_core_config_rationale_36",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 0,
+      "community_name": "DetectionResult",
       "norm_label": "ambil konfigurasi untuk lokasi tertentu.          args:             location: na"
     },
     {
@@ -1506,8 +1506,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_analyzer_py_src_detectors_led_analyzer_1abd52",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "analyzer.py"
     },
     {
@@ -1660,8 +1660,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_analyzer_py_src_detectors_led_analyzer_rationale_1_1abd52",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "led analyzer module.  orchestrates all detection algorithms for led panel analys"
     },
     {
@@ -1968,8 +1968,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "content_mask.py"
     },
     {
@@ -1979,8 +1979,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_create_led_content_mask",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "create_led_content_mask()"
     },
     {
@@ -1990,8 +1990,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_py_ndarray",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "ndarray"
     },
     {
@@ -2001,8 +2001,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_apply_morphological_cleanup",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "_apply_morphological_cleanup()"
     },
     {
@@ -2012,8 +2012,8 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_extract_largest_component",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "_extract_largest_component()"
     },
     {
@@ -2023,8 +2023,8 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_create_full_image_mask",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "create_full_image_mask()"
     },
     {
@@ -2034,8 +2034,8 @@
       "source_location": "L138",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_refine_led_mask",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "refine_led_mask()"
     },
     {
@@ -2045,8 +2045,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_rationale_1",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "content mask module.  functions for creating led content masks."
     },
     {
@@ -2056,8 +2056,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_rationale_21",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "create mask for led content area.      uses simple thresholding for bright and c"
     },
     {
@@ -2067,8 +2067,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_rationale_50",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "apply morphological operations to clean up mask.      hanya open (remove noise)"
     },
     {
@@ -2078,8 +2078,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_rationale_85",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "extract the largest connected component.      args:         mask: input binary m"
     },
     {
@@ -2089,8 +2089,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_rationale_110",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "create mask for led content in full image.      creates a binary mask covering t"
     },
     {
@@ -2100,8 +2100,8 @@
       "source_location": "L143",
       "_origin": "ast",
       "id": "src_detectors_led_content_mask_rationale_143",
-      "community": 3,
-      "community_name": "analyzer.py",
+      "community": 11,
+      "community_name": "Path",
       "norm_label": "refine panel mask to detect actual led content.      applies brightness and satu"
     },
     {
@@ -2111,8 +2111,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_init",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "__init__.py"
     },
     {
@@ -2122,8 +2122,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_init_rationale_1",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "led anomaly detectors.  individual detection algorithms for different types of l"
     },
     {
@@ -2133,8 +2133,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_blocking",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "blocking.py"
     },
     {
@@ -2144,8 +2144,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_blocking_detect_blocking",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "detect_blocking()"
     },
     {
@@ -2155,30 +2155,30 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_blocking_py_ndarray",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "ndarray"
     },
     {
       "label": "_classify_blocking()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L110",
+      "source_location": "L113",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_blocking_classify_blocking",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "_classify_blocking()"
     },
     {
       "label": "_calculate_neighborhood_contrast()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L161",
+      "source_location": "L167",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_blocking_calculate_neighborhood_contrast",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "_calculate_neighborhood_contrast()"
     },
     {
@@ -2188,8 +2188,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_blocking_rationale_1",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "blocking detection module.  detects large dark areas that block led content."
     },
     {
@@ -2199,30 +2199,30 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_blocking_rationale_21",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "detect blocking anomalies in led panel.      args:         gray: grayscale led r"
     },
     {
       "label": "Classify type of blocking anomaly.      Args:         cw: Contour width.",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L118",
+      "source_location": "L121",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_blocking_rationale_118",
-      "community": 4,
-      "community_name": "__init__.py",
+      "id": "src_detectors_led_detectors_blocking_rationale_121",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "classify type of blocking anomaly.      args:         cw: contour width."
     },
     {
       "label": "Calculate contrast between dark region and its neighborhood.      Args:",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L167",
+      "source_location": "L173",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_blocking_rationale_167",
-      "community": 4,
-      "community_name": "__init__.py",
+      "id": "src_detectors_led_detectors_blocking_rationale_173",
+      "community": 17,
+      "community_name": "TemporalCellResult",
       "norm_label": "calculate contrast between dark region and its neighborhood.      args:"
     },
     {
@@ -2273,7 +2273,7 @@
       "label": "_compute_block_stats()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L153",
+      "source_location": "L158",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_color_errors_compute_block_stats",
       "community": 12,
@@ -2284,7 +2284,7 @@
       "label": "_compute_block_stats_full()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L196",
+      "source_location": "L201",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_color_errors_compute_block_stats_full",
       "community": 12,
@@ -2295,7 +2295,7 @@
       "label": "_get_neighbor_stats()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L241",
+      "source_location": "L246",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_color_errors_get_neighbor_stats",
       "community": 12,
@@ -2306,7 +2306,7 @@
       "label": "_get_neighbor_sats()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L267",
+      "source_location": "L272",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_color_errors_get_neighbor_sats",
       "community": 12,
@@ -2317,7 +2317,7 @@
       "label": "_merge_color_anomalies()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L295",
+      "source_location": "L300",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_color_errors_merge_color_anomalies",
       "community": 12,
@@ -2361,9 +2361,9 @@
       "label": "Compute statistics for each block (legacy, sat+hue only).      Args:         hue",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L161",
+      "source_location": "L166",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_color_errors_rationale_161",
+      "id": "src_detectors_led_detectors_color_errors_rationale_166",
       "community": 12,
       "community_name": "Config",
       "norm_label": "compute statistics for each block (legacy, sat+hue only).      args:         hue"
@@ -2372,9 +2372,9 @@
       "label": "Compute per-block hue, sat, val statistics within LED mask.      Args:         h",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L205",
+      "source_location": "L210",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_color_errors_rationale_205",
+      "id": "src_detectors_led_detectors_color_errors_rationale_210",
       "community": 12,
       "community_name": "Config",
       "norm_label": "compute per-block hue, sat, val statistics within led mask.      args:         h"
@@ -2383,9 +2383,9 @@
       "label": "Return stats of 8-connected neighbor blocks.      Args:         block_stats: Blo",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L246",
+      "source_location": "L251",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_color_errors_rationale_246",
+      "id": "src_detectors_led_detectors_color_errors_rationale_251",
       "community": 12,
       "community_name": "Config",
       "norm_label": "return stats of 8-connected neighbor blocks.      args:         block_stats: blo"
@@ -2394,9 +2394,9 @@
       "label": "Get saturation values of neighboring blocks.      Args:         block_stats: Blo",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L272",
+      "source_location": "L277",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_color_errors_rationale_272",
+      "id": "src_detectors_led_detectors_color_errors_rationale_277",
       "community": 12,
       "community_name": "Config",
       "norm_label": "get saturation values of neighboring blocks.      args:         block_stats: blo"
@@ -2405,9 +2405,9 @@
       "label": "Merge adjacent color anomalies into larger regions.      Adjacent blocks with th",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L299",
+      "source_location": "L304",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_color_errors_rationale_299",
+      "id": "src_detectors_led_detectors_color_errors_rationale_304",
       "community": 12,
       "community_name": "Config",
       "norm_label": "merge adjacent color anomalies into larger regions.      adjacent blocks with th"
@@ -2419,8 +2419,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "dark_regions.py"
     },
     {
@@ -2430,8 +2430,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_detect_dark_regions_by_local_contrast",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "detect_dark_regions_by_local_contrast()"
     },
     {
@@ -2441,8 +2441,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_py_ndarray",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "ndarray"
     },
     {
@@ -2452,8 +2452,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_find_dark_cells",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "_find_dark_cells()"
     },
     {
@@ -2463,8 +2463,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_merge_dark_cells",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "_merge_dark_cells()"
     },
     {
@@ -2474,8 +2474,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_rationale_1",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "dark region detection module.  detects dark regions using local contrast analysi"
     },
     {
@@ -2485,8 +2485,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_rationale_19",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "detect dark regions using local contrast analysis.      divides panel into 8x8 g"
     },
     {
@@ -2496,8 +2496,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_rationale_71",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "find cells that are darker than threshold.      args:         gray: grayscale im"
     },
     {
@@ -2507,8 +2507,8 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dark_regions_rationale_123",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 15,
+      "community_name": ".detect",
       "norm_label": "merge adjacent dark cells into regions.      args:         dark_cells: list of d"
     },
     {
@@ -2518,8 +2518,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dead_blocks",
-      "community": 6,
-      "community_name": "utils.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "dead_blocks.py"
     },
     {
@@ -2529,8 +2529,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dead_blocks_detect_dead_blocks",
-      "community": 6,
-      "community_name": "utils.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "detect_dead_blocks()"
     },
     {
@@ -2540,8 +2540,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dead_blocks_py_ndarray",
-      "community": 6,
-      "community_name": "utils.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "ndarray"
     },
     {
@@ -2551,8 +2551,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dead_blocks_detect_dead_blocks_in_mask",
-      "community": 6,
-      "community_name": "utils.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "detect_dead_blocks_in_mask()"
     },
     {
@@ -2562,8 +2562,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dead_blocks_rationale_1",
-      "community": 6,
-      "community_name": "utils.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "dead block detection module.  detects dead pixel blocks in led content."
     },
     {
@@ -2573,8 +2573,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dead_blocks_rationale_18",
-      "community": 6,
-      "community_name": "utils.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "detect dead pixel blocks without mask.      args:         gray: grayscale led re"
     },
     {
@@ -2584,8 +2584,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_dead_blocks_rationale_58",
-      "community": 6,
-      "community_name": "utils.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "detect dead pixel blocks with mask.      args:         gray: grayscale led regio"
     },
     {
@@ -2595,8 +2595,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_flat_content",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 19,
+      "community_name": "detect_flat_content",
       "norm_label": "flat_content.py"
     },
     {
@@ -2606,8 +2606,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_flat_content_detect_flat_content",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 19,
+      "community_name": "detect_flat_content",
       "norm_label": "detect_flat_content()"
     },
     {
@@ -2617,8 +2617,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_flat_content_py_ndarray",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 19,
+      "community_name": "detect_flat_content",
       "norm_label": "ndarray"
     },
     {
@@ -2628,8 +2628,8 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_flat_content_merge_flat_anomalies",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 19,
+      "community_name": "detect_flat_content",
       "norm_label": "merge_flat_anomalies()"
     },
     {
@@ -2639,8 +2639,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_flat_content_rationale_1",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 19,
+      "community_name": "detect_flat_content",
       "norm_label": "flat content detection module.  detects blank or abnormally flat regions in led"
     },
     {
@@ -2650,8 +2650,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_flat_content_rationale_19",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 19,
+      "community_name": "detect_flat_content",
       "norm_label": "detect flat or blank content regions.      args:         gray: grayscale led reg"
     },
     {
@@ -2661,8 +2661,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_flat_content_rationale_85",
-      "community": 4,
-      "community_name": "__init__.py",
+      "community": 19,
+      "community_name": "detect_flat_content",
       "norm_label": "merge adjacent flat anomalies into larger regions.      args:         anomalies:"
     },
     {
@@ -2702,7 +2702,7 @@
       "label": "_compute_row_variances()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L107",
+      "source_location": "L112",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_horizontal_line_compute_row_variances",
       "community": 4,
@@ -2710,10 +2710,21 @@
       "norm_label": "_compute_row_variances()"
     },
     {
+      "label": "_smooth_row_variances()",
+      "file_type": "code",
+      "source_file": "src/detectors/led/detectors/horizontal_line.py",
+      "source_location": "L142",
+      "_origin": "ast",
+      "id": "src_detectors_led_detectors_horizontal_line_smooth_row_variances",
+      "community": 4,
+      "community_name": "__init__.py",
+      "norm_label": "_smooth_row_variances()"
+    },
+    {
       "label": "_is_local_maximum_variance()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L137",
+      "source_location": "L171",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_horizontal_line_is_local_maximum_variance",
       "community": 4,
@@ -2746,20 +2757,31 @@
       "label": "Compute variance for each row.      Args:         gray: Grayscale image.",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L113",
+      "source_location": "L118",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_horizontal_line_rationale_113",
+      "id": "src_detectors_led_detectors_horizontal_line_rationale_118",
       "community": 4,
       "community_name": "__init__.py",
       "norm_label": "compute variance for each row.      args:         gray: grayscale image."
     },
     {
+      "label": "Smooth row variances using moving average.      Reduces noise from single-row co",
+      "file_type": "rationale",
+      "source_file": "src/detectors/led/detectors/horizontal_line.py",
+      "source_location": "L146",
+      "_origin": "ast",
+      "id": "src_detectors_led_detectors_horizontal_line_rationale_146",
+      "community": 4,
+      "community_name": "__init__.py",
+      "norm_label": "smooth row variances using moving average.      reduces noise from single-row co"
+    },
+    {
       "label": "Check if row has locally maximum variance.      Args:         y: Row index.",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L141",
+      "source_location": "L175",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_horizontal_line_rationale_141",
+      "id": "src_detectors_led_detectors_horizontal_line_rationale_175",
       "community": 4,
       "community_name": "__init__.py",
       "norm_label": "check if row has locally maximum variance.      args:         y: row index."
@@ -2914,8 +2936,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "module_error.py"
     },
     {
@@ -2925,8 +2947,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_detect_module_errors",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "detect_module_errors()"
     },
     {
@@ -2936,8 +2958,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_py_ndarray",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "ndarray"
     },
     {
@@ -2947,8 +2969,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_compute_chaos_scores",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "_compute_chaos_scores()"
     },
     {
@@ -2958,41 +2980,41 @@
       "source_location": "L129",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_calculate_cell_chaos",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "_calculate_cell_chaos()"
     },
     {
       "label": "_find_chaotic_cells()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L192",
+      "source_location": "L214",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_find_chaotic_cells",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "_find_chaotic_cells()"
     },
     {
       "label": "_merge_chaotic_cells()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L218",
+      "source_location": "L240",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_merge_chaotic_cells",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "_merge_chaotic_cells()"
     },
     {
       "label": "_create_module_error_anomaly()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L275",
+      "source_location": "L297",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_create_module_error_anomaly",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "_create_module_error_anomaly()"
     },
     {
@@ -3002,8 +3024,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_rationale_1",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "module error detection module.  detects corrupted or glitchy sections in led con"
     },
     {
@@ -3013,8 +3035,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_rationale_27",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "detect module error anomalies.      module errors appear as sections with corrup"
     },
     {
@@ -3024,52 +3046,52 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_rationale_90",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "compute chaos score for each grid cell.      chaos score measures how \"glitchy\""
     },
     {
-      "label": "Calculate chaos score for a single cell.      Chaos is measured by:     1. High",
+      "label": "Calculate chaos score for a single cell.      Detects module error patterns by m",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/module_error.py",
       "source_location": "L134",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_module_error_rationale_134",
-      "community": 14,
-      "community_name": "annotation.py",
-      "norm_label": "calculate chaos score for a single cell.      chaos is measured by:     1. high"
+      "community": 3,
+      "community_name": "analyzer.py",
+      "norm_label": "calculate chaos score for a single cell.      detects module error patterns by m"
     },
     {
       "label": "Find cells with high chaos scores.      Args:         scores: List of chaos scor",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L197",
+      "source_location": "L219",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_module_error_rationale_197",
-      "community": 14,
-      "community_name": "annotation.py",
+      "id": "src_detectors_led_detectors_module_error_rationale_219",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "find cells with high chaos scores.      args:         scores: list of chaos scor"
     },
     {
       "label": "Merge adjacent chaotic cells into regions.      Args:         cells: List of (ro",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L222",
+      "source_location": "L244",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_module_error_rationale_222",
-      "community": 14,
-      "community_name": "annotation.py",
+      "id": "src_detectors_led_detectors_module_error_rationale_244",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "merge adjacent chaotic cells into regions.      args:         cells: list of (ro"
     },
     {
       "label": "Create anomaly from a region of chaotic cells.      Args:         region: List o",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L281",
+      "source_location": "L303",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_module_error_rationale_281",
-      "community": 14,
-      "community_name": "annotation.py",
+      "id": "src_detectors_led_detectors_module_error_rationale_303",
+      "community": 3,
+      "community_name": "analyzer.py",
       "norm_label": "create anomaly from a region of chaotic cells.      args:         region: list o"
     },
     {
@@ -3340,7 +3362,7 @@
       "label": "_get_neighbors()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L183",
+      "source_location": "L187",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_region_contrast_get_neighbors",
       "community": 13,
@@ -3351,7 +3373,7 @@
       "label": "_merge_cells_to_regions()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L217",
+      "source_location": "L221",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_region_contrast_merge_cells_to_regions",
       "community": 13,
@@ -3362,7 +3384,7 @@
       "label": "_create_region_anomaly()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L275",
+      "source_location": "L279",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_region_contrast_create_region_anomaly",
       "community": 13,
@@ -3417,9 +3439,9 @@
       "label": "Get neighboring cells (8-connectivity).      Args:         cell_stats: List of c",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L189",
+      "source_location": "L193",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_region_contrast_rationale_189",
+      "id": "src_detectors_led_detectors_region_contrast_rationale_193",
       "community": 13,
       "community_name": "AnomalyLevel",
       "norm_label": "get neighboring cells (8-connectivity).      args:         cell_stats: list of c"
@@ -3428,9 +3450,9 @@
       "label": "Merge adjacent anomalous cells into regions.      Args:         cells: List of (",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L221",
+      "source_location": "L225",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_region_contrast_rationale_221",
+      "id": "src_detectors_led_detectors_region_contrast_rationale_225",
       "community": 13,
       "community_name": "AnomalyLevel",
       "norm_label": "merge adjacent anomalous cells into regions.      args:         cells: list of ("
@@ -3439,9 +3461,9 @@
       "label": "Create anomaly from a region of anomalous cells.      Args:         region: List",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L281",
+      "source_location": "L285",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_region_contrast_rationale_281",
+      "id": "src_detectors_led_detectors_region_contrast_rationale_285",
       "community": 13,
       "community_name": "AnomalyLevel",
       "norm_label": "create anomaly from a region of anomalous cells.      args:         region: list"
@@ -3453,19 +3475,19 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_uniformity",
-      "community": 17,
-      "community_name": "TemporalCellResult",
+      "community": 6,
+      "community_name": "utils.py",
       "norm_label": "uniformity.py"
     },
     {
       "label": "detect_uniform_content()",
       "file_type": "code",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_uniformity_detect_uniform_content",
-      "community": 17,
-      "community_name": "TemporalCellResult",
+      "community": 6,
+      "community_name": "utils.py",
       "norm_label": "detect_uniform_content()"
     },
     {
@@ -3475,8 +3497,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_uniformity_py_ndarray",
-      "community": 17,
-      "community_name": "TemporalCellResult",
+      "community": 6,
+      "community_name": "utils.py",
       "norm_label": "ndarray"
     },
     {
@@ -3486,19 +3508,19 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_detectors_led_detectors_uniformity_rationale_1",
-      "community": 17,
-      "community_name": "TemporalCellResult",
+      "community": 6,
+      "community_name": "utils.py",
       "norm_label": "uniformity detection module.  detects led panels with abnormally uniform content"
     },
     {
       "label": "Detect abnormally uniform LED content.      A normal LED ad has natural brightne",
       "file_type": "rationale",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L23",
+      "source_location": "L24",
       "_origin": "ast",
-      "id": "src_detectors_led_detectors_uniformity_rationale_23",
-      "community": 17,
-      "community_name": "TemporalCellResult",
+      "id": "src_detectors_led_detectors_uniformity_rationale_24",
+      "community": 6,
+      "community_name": "utils.py",
       "norm_label": "detect abnormally uniform led content.      a normal led ad has natural brightne"
     },
     {
@@ -3904,8 +3926,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_detectors_led_types_ledanomaly",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "ledanomaly"
     },
     {
@@ -3937,8 +3959,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_detectors_led_types_rationale_35",
-      "community": 14,
-      "community_name": "annotation.py",
+      "community": 18,
+      "community_name": "LEDAnomaly",
       "norm_label": "detected anomaly in led panel.      attributes:         x: x coordinate of anoma"
     },
     {
@@ -4421,8 +4443,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "src_pipeline_ensemble_ensemblepipeline_init",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 2,
+      "community_name": "EnsemblePipeline",
       "norm_label": ".__init__()"
     },
     {
@@ -4605,7 +4627,7 @@
       "label": ".save_report()",
       "file_type": "code",
       "source_file": "src/pipeline/ensemble.py",
-      "source_location": "L606",
+      "source_location": "L615",
       "_origin": "ast",
       "id": "src_pipeline_ensemble_ensemblepipeline_save_report",
       "community": 5,
@@ -4641,8 +4663,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_pipeline_ensemble_rationale_54",
-      "community": 15,
-      "community_name": ".detect",
+      "community": 2,
+      "community_name": "EnsemblePipeline",
       "norm_label": "initialize ensemble pipeline.          args:             location: nama lokasi."
     },
     {
@@ -4814,9 +4836,9 @@
       "label": "Simpan laporan JSON.          Args:             results: Dict hasil per detector",
       "file_type": "rationale",
       "source_file": "src/pipeline/ensemble.py",
-      "source_location": "L612",
+      "source_location": "L621",
       "_origin": "ast",
-      "id": "src_pipeline_ensemble_rationale_612",
+      "id": "src_pipeline_ensemble_rationale_621",
       "community": 5,
       "community_name": "Path",
       "norm_label": "simpan laporan json.          args:             results: dict hasil per detector"
@@ -6041,7 +6063,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/pipeline/ensemble.py",
-      "source_location": "L626",
+      "source_location": "L635",
       "weight": 1.0,
       "source": "src_pipeline_ensemble_ensemblepipeline_save_report",
       "target": "src_core_config_config_get_report_path"
@@ -7093,7 +7115,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/pipeline/ensemble.py",
-      "source_location": "L606",
+      "source_location": "L615",
       "weight": 1.0,
       "source": "src_pipeline_ensemble_ensemblepipeline_save_report",
       "target": "src_core_types_detectionresult",
@@ -10509,7 +10531,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L161",
+      "source_location": "L167",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_blocking",
       "target": "src_detectors_led_detectors_blocking_calculate_neighborhood_contrast",
@@ -10519,7 +10541,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L110",
+      "source_location": "L113",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_blocking",
       "target": "src_detectors_led_detectors_blocking_classify_blocking",
@@ -10583,7 +10605,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L85",
+      "source_location": "L88",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_blocking_detect_blocking",
       "target": "src_detectors_led_detectors_blocking_calculate_neighborhood_contrast",
@@ -10594,7 +10616,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L89",
+      "source_location": "L92",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_blocking_detect_blocking",
       "target": "src_detectors_led_detectors_blocking_classify_blocking",
@@ -10648,7 +10670,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L161",
+      "source_location": "L167",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_blocking_calculate_neighborhood_contrast",
       "target": "src_detectors_led_detectors_blocking_py_ndarray",
@@ -10658,9 +10680,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L118",
+      "source_location": "L121",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_blocking_rationale_118",
+      "source": "src_detectors_led_detectors_blocking_rationale_121",
       "target": "src_detectors_led_detectors_blocking_classify_blocking",
       "confidence_score": 1.0
     },
@@ -10668,9 +10690,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/blocking.py",
-      "source_location": "L167",
+      "source_location": "L173",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_blocking_rationale_167",
+      "source": "src_detectors_led_detectors_blocking_rationale_173",
       "target": "src_detectors_led_detectors_blocking_calculate_neighborhood_contrast",
       "confidence_score": 1.0
     },
@@ -10678,7 +10700,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L153",
+      "source_location": "L158",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors",
       "target": "src_detectors_led_detectors_color_errors_compute_block_stats",
@@ -10688,7 +10710,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L196",
+      "source_location": "L201",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors",
       "target": "src_detectors_led_detectors_color_errors_compute_block_stats_full",
@@ -10718,7 +10740,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L267",
+      "source_location": "L272",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors",
       "target": "src_detectors_led_detectors_color_errors_get_neighbor_sats",
@@ -10728,7 +10750,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L241",
+      "source_location": "L246",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors",
       "target": "src_detectors_led_detectors_color_errors_get_neighbor_stats",
@@ -10738,7 +10760,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L295",
+      "source_location": "L300",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors",
       "target": "src_detectors_led_detectors_color_errors_merge_color_anomalies",
@@ -10835,7 +10857,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L153",
+      "source_location": "L158",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors_compute_block_stats",
       "target": "src_detectors_led_detectors_color_errors_py_ndarray",
@@ -10846,7 +10868,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L196",
+      "source_location": "L201",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors_compute_block_stats_full",
       "target": "src_detectors_led_detectors_color_errors_py_ndarray",
@@ -10890,7 +10912,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L150",
+      "source_location": "L155",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors_detect_color_errors_in_mask",
       "target": "src_detectors_led_detectors_color_errors_merge_color_anomalies",
@@ -10932,9 +10954,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L161",
+      "source_location": "L166",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_color_errors_rationale_161",
+      "source": "src_detectors_led_detectors_color_errors_rationale_166",
       "target": "src_detectors_led_detectors_color_errors_compute_block_stats",
       "confidence_score": 1.0
     },
@@ -10942,9 +10964,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L205",
+      "source_location": "L210",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_color_errors_rationale_205",
+      "source": "src_detectors_led_detectors_color_errors_rationale_210",
       "target": "src_detectors_led_detectors_color_errors_compute_block_stats_full",
       "confidence_score": 1.0
     },
@@ -10952,9 +10974,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L246",
+      "source_location": "L251",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_color_errors_rationale_246",
+      "source": "src_detectors_led_detectors_color_errors_rationale_251",
       "target": "src_detectors_led_detectors_color_errors_get_neighbor_stats",
       "confidence_score": 1.0
     },
@@ -10962,9 +10984,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L272",
+      "source_location": "L277",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_color_errors_rationale_272",
+      "source": "src_detectors_led_detectors_color_errors_rationale_277",
       "target": "src_detectors_led_detectors_color_errors_get_neighbor_sats",
       "confidence_score": 1.0
     },
@@ -10973,7 +10995,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L295",
+      "source_location": "L300",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_color_errors_merge_color_anomalies",
       "target": "src_detectors_led_types_ledanomaly",
@@ -10983,9 +11005,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/color_errors.py",
-      "source_location": "L299",
+      "source_location": "L304",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_color_errors_rationale_299",
+      "source": "src_detectors_led_detectors_color_errors_rationale_304",
       "target": "src_detectors_led_detectors_color_errors_merge_color_anomalies",
       "confidence_score": 1.0
     },
@@ -11482,7 +11504,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L107",
+      "source_location": "L112",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_horizontal_line",
       "target": "src_detectors_led_detectors_horizontal_line_compute_row_variances",
@@ -11502,10 +11524,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L137",
+      "source_location": "L171",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_horizontal_line",
       "target": "src_detectors_led_detectors_horizontal_line_is_local_maximum_variance",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/detectors/led/detectors/horizontal_line.py",
+      "source_location": "L142",
+      "weight": 1.0,
+      "source": "src_detectors_led_detectors_horizontal_line",
+      "target": "src_detectors_led_detectors_horizontal_line_smooth_row_variances",
       "confidence_score": 1.0
     },
     {
@@ -11567,7 +11599,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L71",
+      "source_location": "L76",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_horizontal_line_detect_horizontal_line_pattern",
       "target": "src_detectors_led_detectors_horizontal_line_is_local_maximum_variance",
@@ -11582,6 +11614,17 @@
       "weight": 1.0,
       "source": "src_detectors_led_detectors_horizontal_line_detect_horizontal_line_pattern",
       "target": "src_detectors_led_detectors_horizontal_line_py_ndarray",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/detectors/led/detectors/horizontal_line.py",
+      "source_location": "L47",
+      "weight": 1.0,
+      "source": "src_detectors_led_detectors_horizontal_line_detect_horizontal_line_pattern",
+      "target": "src_detectors_led_detectors_horizontal_line_smooth_row_variances",
       "confidence_score": 1.0
     },
     {
@@ -11621,7 +11664,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L107",
+      "source_location": "L112",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_horizontal_line_compute_row_variances",
       "target": "src_detectors_led_detectors_horizontal_line_py_ndarray",
@@ -11631,9 +11674,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L113",
+      "source_location": "L118",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_horizontal_line_rationale_113",
+      "source": "src_detectors_led_detectors_horizontal_line_rationale_118",
       "target": "src_detectors_led_detectors_horizontal_line_compute_row_variances",
       "confidence_score": 1.0
     },
@@ -11641,9 +11684,19 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/horizontal_line.py",
-      "source_location": "L141",
+      "source_location": "L146",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_horizontal_line_rationale_141",
+      "source": "src_detectors_led_detectors_horizontal_line_rationale_146",
+      "target": "src_detectors_led_detectors_horizontal_line_smooth_row_variances",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "src/detectors/led/detectors/horizontal_line.py",
+      "source_location": "L175",
+      "weight": 1.0,
+      "source": "src_detectors_led_detectors_horizontal_line_rationale_175",
       "target": "src_detectors_led_detectors_horizontal_line_is_local_maximum_variance",
       "confidence_score": 1.0
     },
@@ -12034,7 +12087,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L275",
+      "source_location": "L297",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_module_error",
       "target": "src_detectors_led_detectors_module_error_create_module_error_anomaly",
@@ -12054,7 +12107,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L192",
+      "source_location": "L214",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_module_error",
       "target": "src_detectors_led_detectors_module_error_find_chaotic_cells",
@@ -12064,7 +12117,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L218",
+      "source_location": "L240",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_module_error",
       "target": "src_detectors_led_detectors_module_error_merge_chaotic_cells",
@@ -12257,9 +12310,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L197",
+      "source_location": "L219",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_module_error_rationale_197",
+      "source": "src_detectors_led_detectors_module_error_rationale_219",
       "target": "src_detectors_led_detectors_module_error_find_chaotic_cells",
       "confidence_score": 1.0
     },
@@ -12267,9 +12320,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L222",
+      "source_location": "L244",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_module_error_rationale_222",
+      "source": "src_detectors_led_detectors_module_error_rationale_244",
       "target": "src_detectors_led_detectors_module_error_merge_chaotic_cells",
       "confidence_score": 1.0
     },
@@ -12278,7 +12331,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L275",
+      "source_location": "L297",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_module_error_create_module_error_anomaly",
       "target": "src_detectors_led_types_ledanomaly",
@@ -12289,7 +12342,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L275",
+      "source_location": "L297",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_module_error_create_module_error_anomaly",
       "target": "src_detectors_led_types_ledpanelinfo",
@@ -12299,9 +12352,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/module_error.py",
-      "source_location": "L281",
+      "source_location": "L303",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_module_error_rationale_281",
+      "source": "src_detectors_led_detectors_module_error_rationale_303",
       "target": "src_detectors_led_detectors_module_error_create_module_error_anomaly",
       "confidence_score": 1.0
     },
@@ -12676,7 +12729,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L275",
+      "source_location": "L279",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_region_contrast",
       "target": "src_detectors_led_detectors_region_contrast_create_region_anomaly",
@@ -12706,7 +12759,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L183",
+      "source_location": "L187",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_region_contrast",
       "target": "src_detectors_led_detectors_region_contrast_get_neighbors",
@@ -12716,7 +12769,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L217",
+      "source_location": "L221",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_region_contrast",
       "target": "src_detectors_led_detectors_region_contrast_merge_cells_to_regions",
@@ -12898,9 +12951,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L189",
+      "source_location": "L193",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_region_contrast_rationale_189",
+      "source": "src_detectors_led_detectors_region_contrast_rationale_193",
       "target": "src_detectors_led_detectors_region_contrast_get_neighbors",
       "confidence_score": 1.0
     },
@@ -12908,9 +12961,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L221",
+      "source_location": "L225",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_region_contrast_rationale_221",
+      "source": "src_detectors_led_detectors_region_contrast_rationale_225",
       "target": "src_detectors_led_detectors_region_contrast_merge_cells_to_regions",
       "confidence_score": 1.0
     },
@@ -12919,7 +12972,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L275",
+      "source_location": "L279",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_region_contrast_create_region_anomaly",
       "target": "src_detectors_led_types_ledanomaly",
@@ -12930,7 +12983,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L275",
+      "source_location": "L279",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_region_contrast_create_region_anomaly",
       "target": "src_detectors_led_types_ledpanelinfo",
@@ -12940,9 +12993,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/region_contrast.py",
-      "source_location": "L281",
+      "source_location": "L285",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_region_contrast_rationale_281",
+      "source": "src_detectors_led_detectors_region_contrast_rationale_285",
       "target": "src_detectors_led_detectors_region_contrast_create_region_anomaly",
       "confidence_score": 1.0
     },
@@ -12950,7 +13003,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_uniformity",
       "target": "src_detectors_led_detectors_uniformity_detect_uniform_content",
@@ -12961,7 +13014,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_uniformity",
       "target": "src_detectors_led_types",
@@ -12972,7 +13025,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_uniformity",
       "target": "src_detectors_led_types_ledanomaly",
@@ -12983,7 +13036,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L14",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_uniformity",
       "target": "src_detectors_led_types_ledpanelinfo",
@@ -13004,7 +13057,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_uniformity_detect_uniform_content",
       "target": "src_detectors_led_detectors_uniformity_py_ndarray",
@@ -13015,7 +13068,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_uniformity_detect_uniform_content",
       "target": "src_detectors_led_types_ledanomaly",
@@ -13026,7 +13079,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L17",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "src_detectors_led_detectors_uniformity_detect_uniform_content",
       "target": "src_detectors_led_types_ledpanelinfo",
@@ -13036,9 +13089,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/detectors/led/detectors/uniformity.py",
-      "source_location": "L23",
+      "source_location": "L24",
       "weight": 1.0,
-      "source": "src_detectors_led_detectors_uniformity_rationale_23",
+      "source": "src_detectors_led_detectors_uniformity_rationale_24",
       "target": "src_detectors_led_detectors_uniformity_detect_uniform_content",
       "confidence_score": 1.0
     },
@@ -14455,7 +14508,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/pipeline/ensemble.py",
-      "source_location": "L606",
+      "source_location": "L615",
       "weight": 1.0,
       "source": "src_pipeline_ensemble_ensemblepipeline",
       "target": "src_pipeline_ensemble_ensemblepipeline_save_report",
@@ -14821,9 +14874,9 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/pipeline/ensemble.py",
-      "source_location": "L612",
+      "source_location": "L621",
       "weight": 1.0,
-      "source": "src_pipeline_ensemble_rationale_612",
+      "source": "src_pipeline_ensemble_rationale_621",
       "target": "src_pipeline_ensemble_ensemblepipeline_save_report",
       "confidence_score": 1.0
     },
@@ -14849,5 +14902,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "59a223c2adae432f5404dc814b753262208844b1"
+  "built_at_commit": "7ca13ad2c74b65c11ad7122413a1803f238a5a64"
 }

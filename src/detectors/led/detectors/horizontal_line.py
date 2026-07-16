@@ -42,6 +42,10 @@ def detect_horizontal_line_pattern(
     if len(row_variances) == 0:
         return []
 
+    # Smooth row variances to reduce noise from content transitions
+    # (e.g., soccer field → text area border)
+    row_variances = _smooth_row_variances(row_variances, window=5)
+
     mean_var = float(np.mean(row_variances))
     std_var = float(np.std(row_variances))
 
@@ -50,14 +54,15 @@ def detect_horizontal_line_pattern(
     if std_var < 5.0:
         return []
 
-    # Use 4x std for more conservative detection (was 3x)
-    # Konten iklan normal punya row variance tinggi karena teks
-    # dan grafis — perlu margin lebih besar.
-    threshold = mean_var + 4 * std_var
+    # Use 5x std for more conservative detection (was 4x)
+    # Konten iklan normal punya row variance tinggi karena teks,
+    # grafis, dan transisi konten — perlu margin lebih besar.
+    threshold = mean_var + 5 * std_var
 
     # Require much higher minimum variance to avoid triggering
-    # on natural text/graphics lines in ad content.
-    min_variance_threshold = 2000.0
+    # on natural content transitions (soccer→text, sky→ground, etc.)
+    # 3500 avoids false positives on normal ad content with varied regions.
+    min_variance_threshold = 3500.0
 
     # Edge margin: skip top/bottom 3% — bezels bukan defect
     edge_margin = int(h * 0.03)
@@ -132,6 +137,35 @@ def _compute_row_variances(
             row_variances.append(float(np.var(row[mask])))
 
     return row_variances
+
+
+def _smooth_row_variances(
+    row_variances: List[float],
+    window: int = 5,
+) -> List[float]:
+    """Smooth row variances using moving average.
+
+    Reduces noise from single-row content transitions while
+    preserving genuine high-variance patterns from defects.
+
+    Args:
+        row_variances: Raw row variances.
+        window: Smoothing window size.
+
+    Returns:
+        Smoothed row variances.
+    """
+    n = len(row_variances)
+    if n <= window:
+        return row_variances
+
+    smoothed = []
+    half = window // 2
+    for i in range(n):
+        start = max(0, i - half)
+        end = min(n, i + half + 1)
+        smoothed.append(float(np.mean(row_variances[start:end])))
+    return smoothed
 
 
 def _is_local_maximum_variance(

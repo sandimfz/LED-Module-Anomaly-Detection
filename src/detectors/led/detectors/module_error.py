@@ -22,7 +22,7 @@ def detect_module_errors(
     panel: LEDPanelInfo,
     led_mask: np.ndarray,
     grid_size: int = 16,
-    chaos_threshold: float = 0.3,
+    chaos_threshold: float = 0.75,
 ) -> List[LEDAnomaly]:
     """Detect module error anomalies.
 
@@ -133,10 +133,10 @@ def _calculate_cell_chaos(
 ) -> float:
     """Calculate chaos score for a single cell.
 
-    Chaos is measured by:
-    1. High local variance in grayscale (noise)
-    2. High color variance in HSV (random colors)
-    3. Inconsistent texture (lots of edges)
+    Detects module error patterns by measuring:
+    1. Brightness uniformity (dark/bright anomalies)
+    2. Color consistency (random color variations)
+    3. Horizontal line patterns (corrupted rows)
 
     Args:
         cell_gray: Grayscale cell.
@@ -146,44 +146,66 @@ def _calculate_cell_chaos(
     Returns:
         Chaos score between 0.0 and 1.0.
     """
-    # Method 1: Grayscale variance (noise indicator)
     pixels = cell_gray[cell_mask > 0]
     if len(pixels) == 0:
         return 0.0
 
-    gray_var = float(np.var(pixels))
-    # Normalize: high variance = high chaos
-    gray_chaos = min(gray_var / 2000.0, 1.0)
+    # Method 1: Brightness uniformity
+    # Module errors often show as dark or bright patches
+    mean_brightness = float(np.mean(pixels))
+    std_brightness = float(np.std(pixels))
+    # Low brightness with low variance = dark module (potential defect)
+    # Normal content has moderate brightness and variance
+    brightness_anomaly = 0.0
+    if mean_brightness < 80 and std_brightness < 30:
+        # Dark patch with uniform color - potential dead module
+        brightness_anomaly = min((80 - mean_brightness) / 80, 1.0)
+    elif mean_brightness > 220 and std_brightness < 20:
+        # Bright patch - potential stuck pixel
+        brightness_anomaly = min((mean_brightness - 220) / 35, 1.0)
 
-    # Method 2: Color variance in HSV
+    # Method 2: Color consistency in HSV
     h_channel = cell_hsv[:, :, 0][cell_mask > 0]
     s_channel = cell_hsv[:, :, 1][cell_mask > 0]
-    v_channel = cell_hsv[:, :, 2][cell_mask > 0]
 
     if len(h_channel) == 0:
-        return 0.0
+        return brightness_anomaly
 
-    # High hue variance = random colors = chaos
+    # Module errors show as random color variations
+    # Normal content has consistent hue in dominant color
     hue_var = float(np.var(h_channel))
-    hue_chaos = min(hue_var / 1000.0, 1.0)
+    # High hue variance = random colors = anomaly
+    color_anomaly = min(hue_var / 3000.0, 1.0)
 
-    # High saturation variance = inconsistent color intensity
-    sat_var = float(np.var(s_channel))
-    sat_chaos = min(sat_var / 1500.0, 1.0)
+    # Method 3: Horizontal line pattern detection
+    # Module errors often show as corrupted horizontal lines
+    h, w = cell_gray.shape
+    if h >= 4:
+        # Compute row-wise variance
+        row_vars = []
+        for row_idx in range(h):
+            row = cell_gray[row_idx, :]
+            mask_row = cell_mask[row_idx, :]
+            if np.sum(mask_row > 0) > w * 0.3:
+                row_vars.append(float(np.var(row[mask_row > 0])))
+            else:
+                row_vars.append(0.0)
 
-    # Method 3: Edge density (lots of edges = noisy)
-    edges = cv2.Canny(cell_gray, 50, 150)
-    edge_pixels = np.sum(edges[cell_mask > 0] > 0)
-    total_pixels = np.sum(cell_mask > 0)
-    edge_ratio = edge_pixels / total_pixels if total_pixels > 0 else 0
-    edge_chaos = min(edge_ratio * 3.0, 1.0)
+        if row_vars:
+            row_var_mean = np.mean(row_vars)
+            row_var_std = np.std(row_vars)
+            # High row variance variation = random horizontal lines
+            line_anomaly = min(row_var_std / (row_var_mean + 1e-6) / 3.0, 1.0)
+        else:
+            line_anomaly = 0.0
+    else:
+        line_anomaly = 0.0
 
     # Combine scores
     chaos = (
-        gray_chaos * 0.3 +
-        hue_chaos * 0.3 +
-        sat_chaos * 0.2 +
-        edge_chaos * 0.2
+        brightness_anomaly * 0.4 +
+        color_anomaly * 0.3 +
+        line_anomaly * 0.3
     )
 
     return min(chaos, 1.0)

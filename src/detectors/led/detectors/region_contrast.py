@@ -18,7 +18,7 @@ def detect_region_contrast_anomalies(
     panel: LEDPanelInfo,
     led_mask: np.ndarray,
     grid_size: int = 8,
-    contrast_threshold: float = 1.5,
+    contrast_threshold: float = 2.5,
     min_region_cells: int = 2,
 ) -> List[LEDAnomaly]:
     """Detect anomalies using region-based contrast comparison.
@@ -169,7 +169,11 @@ def _find_anomalous_cells(
         neighbor_std = max(neighbor_std, 10.0)
 
         # Calculate threshold based on neighbor statistics
-        threshold = neighbor_std * contrast_threshold
+        # Use higher of relative threshold or absolute threshold
+        # to avoid false positives on normal content variation.
+        # Absolute threshold of 35 prevents flagging cells that are
+        # simply darker/brighter due to normal content (soccer vs text).
+        threshold = max(neighbor_std * contrast_threshold, 35.0)
 
         # Check if cell is significantly different
         diff = abs(cell["mean"] - neighbor_mean)

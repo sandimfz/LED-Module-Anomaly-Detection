@@ -54,8 +54,8 @@ def calculate_score(
     if priority_anomalies:
         # Count unique priority types found
         unique_types = set(a.anomaly_type for a in priority_anomalies)
-        # Boost based on how many priority types found (max 0.3)
-        type_boost = min(len(unique_types) * 0.15, 0.3)
+        # Boost based on how many priority types found (max 0.15)
+        type_boost = min(len(unique_types) * 0.10, 0.15)
 
         # Additional boost for high-severity priority anomalies
         max_priority_severity = max(a.severity for a in priority_anomalies)

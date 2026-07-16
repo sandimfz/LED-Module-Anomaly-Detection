@@ -564,18 +564,28 @@ class EnsemblePipeline:
 
         final_score = weighted_score / total_weight if total_weight > 0 else 0.0
 
-        # Max-score strategy: jika ada detector yang score tinggi,
-        # pastikan final score tidak terlalu rendah.
-        # Ini mencegah kasus di mana 1 detector detect tapi lainnya miss.
-        if max_score > 0.5:
-            final_score = max(final_score, max_score * 0.75)
+        # Max-score strategy: hanya boost jika score sangat tinggi (>0.7)
+        # dan ada multiple detectors yang setuju (untuk avoid false positive
+        # dari 1 detector yang salah detect).
+        critical_count = sum(
+            1 for r in results.values()
+            if r.level == AnomalyLevel.CRITICAL
+        )
 
-        # Jika max dari LED Analyzer tinggi, pastikan final tidak terlalu rendah.
+        if max_score > 0.7 and critical_count >= 2:
+            final_score = max(final_score, max_score * 0.70)
+
+        # LED Analyzer boost hanya jika score tinggi (>0.6) dan
+        # ada detector lain yang juga detect (untuk avoid false positive).
         la_score = results.get("led_analyzer", None)
-        if la_score and la_score.anomaly_score > 0.35:
-            final_score = max(final_score, la_score.anomaly_score * 0.80)
+        if (
+            la_score
+            and la_score.anomaly_score > 0.6
+            and critical_count >= 2
+        ):
+            final_score = max(final_score, la_score.anomaly_score * 0.75)
 
-        # Determine level — turunkan threshold untuk lebih sensitif
+        # Determine level
         if final_score >= 0.55:
             final_level = AnomalyLevel.CRITICAL
         elif final_score >= 0.30:
@@ -586,12 +596,11 @@ class EnsemblePipeline:
         # Deduplicate flagged cells
         unique_flagged = list(set(all_flagged))
 
-        # Pastikan final level tidak lebih rendah dari level detector
-        # dengan deteksi tertinggi.
+        # Hanya force CRITICAL jika ≥2 detectors agree (bukan cuma 1).
+        # Ini mencegah false positive dari single detector yang salah detect.
         if has_critical and final_level != AnomalyLevel.CRITICAL:
-            if final_score < 0.55:
-                final_score = max(final_score, 0.55)
-            final_level = AnomalyLevel.CRITICAL
+            if critical_count >= 2 and final_score >= 0.40:
+                final_level = AnomalyLevel.CRITICAL
 
         return DetectionResult(
             location=self.location,

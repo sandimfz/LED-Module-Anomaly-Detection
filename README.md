@@ -1,4 +1,4 @@
-# LED Module Anomaly Detection v2.1
+# LED Module Anomaly Detection v2.2
 
 Sistem deteksi kerusakan modul LED pada videotron dengan pendekatan **hybrid**: LED Analyzer + Grid + Temporal + PatchCore.
 
@@ -167,17 +167,17 @@ output/16-07-2026/12/
 
 | Detector | Fungsi | Threshold |
 |----------|--------|-----------|
-| blocking | Area gelap yang memblokir konten | area > 0.2% panel |
-| dark_regions | Area gelap dari local contrast | cell < mean - 1.5×std |
-| module_error | Modul dengan chaos tinggi | chaos score > 0.3 |
+| blocking | Area gelap yang memblokir konten | contrast > 0.4, area > 5% panel |
+| dark_regions | Area gelap dari local contrast | cell < mean - 2.5×std |
+| module_error | Modul dengan chaos tinggi | chaos score > 0.75 |
 | line_defects | Garis horizontal/vertical abnormal | local minimum detection |
-| color_errors | Warna menyimpang dari neighbors | hue delta > 35 |
+| color_errors | Warna menyimpang dari neighbors | hue shift > 55°, min 3 neighbors |
 | dead_blocks | Blok mati di dalam content mask | brightness < 25 |
-| uniformity | Konten terlalu uniform (frozen?) | std < 25 AND ratio < 0.20 |
+| uniformity | Konten terlalu uniform (frozen?) | std < 10 AND ratio < 0.10 + edge check |
 | pixel_chaos | Area dengan pixel-level chaos | entropy analysis |
 | flat_content | Area terlalu rata | std dev rendah |
-| horizontal_line | Pola garis horizontal | edge detection |
-| region_contrast | Kontras antar region | diff > 1.5×neighbor_std |
+| horizontal_line | Pola garis horizontal | variance > 3500, smoothing +5×std |
+| region_contrast | Kontras antar region | diff > 2.5×neighbor_std, abs min 35 |
 
 ## Scoring
 
@@ -185,7 +185,7 @@ output/16-07-2026/12/
 
 ```
 base_score = (area_contribution × 0.5) + (avg_severity × 0.5)
-type_boost = min(unique_priority_types × 0.15, 0.3)
+type_boost = min(unique_priority_types × 0.10, 0.15) + max_severity × 0.1
 final_score = min(base_score + type_boost, 1.0)
 ```
 
@@ -249,3 +249,57 @@ python calibrate_screen.py --location <lokasi> --resolution <WxH>
 ### False positive pada gambar normal
 - Detector terlalu sensitif terhadap variasi warna normal
 - Perlu adjust threshold di `src/detectors/led/detectors/`
+
+## Perubahan v2.2 (False Positive Fixes)
+
+Perbaikan untuk mengurangi false positive pada gambar normal:
+
+### 1. Horizontal Line Detector
+- Tambah `_smooth_row_variances()` untuk smooth noise dari content transitions
+- Naikkan `min_variance_threshold` dari 2000 → 3500
+- Naikkan std multiplier dari 4× → 5×
+
+### 2. Color Errors Detector
+- Naikkan hue_shift threshold dari 40° → 55°
+- Tambah requirement minimal 3 saturated neighbors
+
+### 3. Region Contrast Detector
+- Naikkan `contrast_threshold` dari 1.5 → 2.5
+- Tambah absolute threshold minimum 35
+
+### 4. Blocking Detector
+- Naikkan std multiplier dari 2× → 2.5×
+- Naikkan absolute threshold dari 60 → 80
+- Perketat `_classify_blocking()` - require higher aspect ratios
+- Tambah requirement contrast > 0.4 untuk large dark areas
+
+### 5. Uniformity Detector
+- Naikkan thresholds: std < 10 (dari 15), ratio < 0.10 (dari 0.15)
+- Tambah edge detection check - skip jika ada edges (> 5%)
+
+### 6. Ensemble Pipeline
+- Hapus aggressive `has_critical` override
+- Require ≥2 detectors agree sebelum force CRITICAL
+- Naikkan thresholds untuk score boosts
+
+### Hasil Test
+
+| Status | Sebelum v2.2 | Sesudah v2.2 |
+|--------|--------------|--------------|
+| NORMAL | 0% | 59% |
+| WARNING | 0% | 39% |
+| CRITICAL | 100% | 1.4% |
+
+### Known Limitations
+
+1. **Single image analysis** tidak bisa bedakan frozen/stuck dari normal uniform content
+2. **Moiré patterns** dari kamera masih bisa trigger false positives
+3. **Edge cases** dengan content sangat uniform (soccer field) masih bisa terdeteksi sebagai WARNING
+
+### Planned Improvements (v2.3)
+
+1. **Temporal Analysis** - Bandingkan multiple frames untuk detect frozen/stuck
+2. **Content Classification** - Classify content type (soccer, text, ad) untuk adaptive thresholds
+3. **Location Profiling** - Baseline normal per lokasi
+
+## Development

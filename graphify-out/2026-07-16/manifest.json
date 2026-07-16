@@ -15,14 +15,14 @@
     "semantic_hash": "4e236e4d0cf031337f0a713310860ce0"
   },
   "src/core/config.py": {
-    "mtime": 1784107093.9525893,
-    "ast_hash": "69bf50a42a49d6583af48d638e8d79cd",
+    "mtime": 1784179681.7778654,
+    "ast_hash": "617819c76903b7419ecd86505da7c7eb",
     "semantic_hash": ""
   },
   "src/core/types.py": {
-    "mtime": 1784094103.8158655,
-    "ast_hash": "83f5b427aafc24fc4f10eaf1a45f1627",
-    "semantic_hash": "83f5b427aafc24fc4f10eaf1a45f1627"
+    "mtime": 1784178645.3089857,
+    "ast_hash": "f4d6698bb9444c5aea237f6d301a82e5",
+    "semantic_hash": ""
   },
   "src/core/utils.py": {
     "mtime": 1784004509.9965448,
@@ -40,9 +40,9 @@
     "semantic_hash": "0271d9368ebd0019d3607489a7e3be0e"
   },
   "src/detectors/dark_spot.py": {
-    "mtime": 1784099482.7845633,
-    "ast_hash": "cac9a26c59d62e7d38232d039cc71a0e",
-    "semantic_hash": "cac9a26c59d62e7d38232d039cc71a0e"
+    "mtime": 1784109344.8047981,
+    "ast_hash": "dc5dff5d7dd49ed80b703f116bd51d49",
+    "semantic_hash": ""
   },
   "src/detectors/grid.py": {
     "mtime": 1784099470.4637675,
@@ -70,9 +70,9 @@
     "semantic_hash": "27a2d2f692930500fca888c8b51e7096"
   },
   "src/pipeline/ensemble.py": {
-    "mtime": 1784101037.8277688,
-    "ast_hash": "3b8688e99224f32c9ab0d7eb91f175f7",
-    "semantic_hash": "3b8688e99224f32c9ab0d7eb91f175f7"
+    "mtime": 1784178843.6841872,
+    "ast_hash": "ff39e805d248fefd4d99dbe57dc665b1",
+    "semantic_hash": ""
   },
   "train.py": {
     "mtime": 1784018810.1358733,
@@ -280,8 +280,8 @@
     "semantic_hash": "6eb5ff6bebbee46dacb5dc4d209c4c79"
   },
   "src/detectors/led/analyzer.py": {
-    "mtime": 1784104810.7317004,
-    "ast_hash": "728b8efb3e7fd867bec1d968c5dd6776",
+    "mtime": 1784110878.4342506,
+    "ast_hash": "c4bc67cc416cff0ecd31c2be58dd8736",
     "semantic_hash": ""
   },
   "src/detectors/led/annotation.py": {
@@ -295,13 +295,13 @@
     "semantic_hash": "34af705440218357057ec27d240674fc"
   },
   "src/detectors/led/detectors/__init__.py": {
-    "mtime": 1784100111.6609383,
-    "ast_hash": "3ab28b6f3d6ce047cca03a80367b6604",
-    "semantic_hash": "3ab28b6f3d6ce047cca03a80367b6604"
+    "mtime": 1784110724.224499,
+    "ast_hash": "42afc92db9577f56fb157dd9bfd299fd",
+    "semantic_hash": ""
   },
   "src/detectors/led/detectors/blocking.py": {
-    "mtime": 1784104825.1166728,
-    "ast_hash": "0ee6ff6297a5379a4099caa177996672",
+    "mtime": 1784110638.3851886,
+    "ast_hash": "7ad876c07c6266188b9075f32f8f7975",
     "semantic_hash": ""
   },
   "src/detectors/led/detectors/color_errors.py": {
@@ -350,9 +350,9 @@
     "semantic_hash": ""
   },
   "src/detectors/led/scoring.py": {
-    "mtime": 1784099286.9828644,
-    "ast_hash": "efa654ba58a998b5c6c583cb97cfd3bd",
-    "semantic_hash": "efa654ba58a998b5c6c583cb97cfd3bd"
+    "mtime": 1784110961.4885743,
+    "ast_hash": "47cdacc6177d08903f1bf5c1a669b6ba",
+    "semantic_hash": ""
   },
   "src/detectors/led/types.py": {
     "mtime": 1784097001.680434,
@@ -382,6 +382,21 @@
   "src/detectors/led/detectors/uniformity.py": {
     "mtime": 1784104550.9403539,
     "ast_hash": "72f3cc59ada5d076c2f55da483609401",
+    "semantic_hash": ""
+  },
+  "calibrate_screen.py": {
+    "mtime": 1784179482.563208,
+    "ast_hash": "a13efb950b73b88ceedeb0c1b6096eaf",
+    "semantic_hash": ""
+  },
+  "src/detectors/led/detectors/module_error.py": {
+    "mtime": 1784110456.744631,
+    "ast_hash": "8fa2881bf551b65d3504e0e47d8ee730",
+    "semantic_hash": ""
+  },
+  "src/detectors/led/detectors/region_contrast.py": {
+    "mtime": 1784110408.1310124,
+    "ast_hash": "341937b6c25e74f78fd2b7657c95667d",
     "semantic_hash": ""
   }
 }
