@@ -89,8 +89,12 @@ def _compute_chaos_scores(
 ) -> List[float]:
     """Compute chaos score for each grid cell.
 
-    Chaos score measures how "glitchy" or corrupted a cell looks.
-    High chaos = lots of random color variations, inconsistent texture.
+    Two parallel detection signals:
+    1. Chaos score: random color variations, corrupted rows (existing)
+    2. Flat stuck score: cell is flat (std<5) but neighbors are varied
+       → module is stuck/dead while surrounding content changes
+
+    Final score per cell = max(chaos_score, flat_stuck_score).
 
     Args:
         gray: Grayscale image.
@@ -101,10 +105,10 @@ def _compute_chaos_scores(
         cell_w: Cell width.
 
     Returns:
-        List of chaos scores for each cell.
+        List of combined scores for each cell.
     """
-    scores = []
-
+    # Pass 1: compute per-cell stats (mean, std, led_ratio)
+    cell_stats = []
     for r in range(grid_size):
         for c in range(grid_size):
             y0, y1 = r * cell_h, (r + 1) * cell_h
@@ -114,14 +118,69 @@ def _compute_chaos_scores(
             led_ratio = float(np.mean(cell_mask))
 
             if led_ratio < 0.3:
-                scores.append(0.0)
+                cell_stats.append({"valid": False, "mean": 0.0, "std": 0.0})
                 continue
 
             cell_gray = gray[y0:y1, x0:x1]
             cell_hsv = hsv[y0:y1, x0:x1]
+            pixels = cell_gray[cell_mask > 0]
 
-            chaos = _calculate_cell_chaos(cell_gray, cell_hsv, cell_mask)
-            scores.append(chaos)
+            if len(pixels) == 0:
+                cell_stats.append({"valid": False, "mean": 0.0, "std": 0.0})
+                continue
+
+            cell_stats.append({
+                "valid": True,
+                "mean": float(np.mean(pixels)),
+                "std": float(np.std(pixels)),
+                "r": r, "c": c,
+                "y0": y0, "x0": x0, "y1": y1, "x1": x1,
+            })
+
+    # Pass 2: compute chaos + flat_stuck per cell
+    scores = []
+    idx = 0
+    for r in range(grid_size):
+        for c in range(grid_size):
+            stat = cell_stats[idx]
+            idx += 1
+
+            if not stat["valid"]:
+                scores.append(0.0)
+                continue
+
+            # --- Signal 1: chaos score (existing) ---
+            cell_gray = gray[stat["y0"]:stat["y1"], stat["x0"]:stat["x1"]]
+            cell_hsv_cell = hsv[stat["y0"]:stat["y1"], stat["x0"]:stat["x1"]]
+            cell_mask = led_mask[stat["y0"]:stat["y1"], stat["x0"]:stat["x1"]]
+            chaos = _calculate_cell_chaos(cell_gray, cell_hsv_cell, cell_mask)
+
+            # --- Signal 2: flat stuck score (new) ---
+            # Cell is flat (std < 5) BUT neighbors have high variance
+            # → module is stuck while surrounding content is active
+            flat_stuck = 0.0
+            if stat["std"] < 5.0:
+                # Get neighbor stats (8-connected)
+                neighbor_stds = []
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        if dr == 0 and dc == 0:
+                            continue
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < grid_size and 0 <= nc < grid_size:
+                            n_idx = nr * grid_size + nc
+                            if n_idx < len(cell_stats) and cell_stats[n_idx]["valid"]:
+                                neighbor_stds.append(cell_stats[n_idx]["std"])
+
+                if neighbor_stds:
+                    avg_neighbor_std = float(np.mean(neighbor_stds))
+                    # Neighbors must have HIGH variance (truly active content)
+                    # 25+ means neighbors are colorful/varied, not just dark bg
+                    if avg_neighbor_std > 25.0:
+                        flat_stuck = 0.5
+
+            # Combined: take the stronger signal
+            scores.append(max(chaos, flat_stuck))
 
     return scores
 

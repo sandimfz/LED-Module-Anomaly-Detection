@@ -93,8 +93,15 @@ def detect_blocking(
             cw, ch, w, h, area_ratio, contrast_score
         )
         if is_blocking:
-            # Severity: kombinasi area_ratio dan contrast
-            severity = min(area_ratio * 4 + contrast_score * 0.3, 1.0)
+            # Severity: base untuk module-scale defect, bonus area & contrast
+            is_module_scale = area_ratio >= 0.01
+            if is_module_scale:
+                base_severity = 0.3
+                area_bonus = min(area_ratio / 0.15, 1.0) * 0.3
+                contrast_bonus = contrast_score * 0.2
+                severity = min(base_severity + area_bonus + contrast_bonus, 1.0)
+            else:
+                severity = 0.0
             anomalies.append(
                 LEDAnomaly(
                     x=x + panel.x,
