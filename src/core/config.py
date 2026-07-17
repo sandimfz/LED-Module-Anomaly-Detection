@@ -46,6 +46,8 @@ class Config:
                 name="sigma_cirebon",
                 grid_rows=12,
                 grid_cols=16,
+                module_rows=12,
+                module_cols=16,
                 # Format: TL, TR, BR, BL — untuk resolusi 1920x1080
                 screen_points=[
                     [624, 102],    # Top-Left
@@ -59,6 +61,8 @@ class Config:
                 name="lengkong",
                 grid_rows=12,
                 grid_cols=16,
+                module_rows=12,
+                module_cols=16,
                 # 4 titik corner LED screen untuk perspective transform
                 # Format: TL, TR, BR, BL — untuk resolusi 1280x720
                 screen_points=[
@@ -82,6 +86,8 @@ class Config:
                 name="paskal",
                 grid_rows=12,
                 grid_cols=16,
+                module_rows=12,
+                module_cols=16,
                 # Format: TL, TR, BR, BL — untuk resolusi 1280x720
                 screen_points=[
                     [977, 1],      # Top-Left

@@ -17,6 +17,7 @@ from src.detectors.led.content_mask import (
     create_led_content_mask,
     refine_led_mask,
 )
+from src.detectors.led.defect_scorer import DefectScorer
 from src.detectors.led.detectors import (
     detect_blocking,
     detect_color_errors,
@@ -32,8 +33,11 @@ from src.detectors.led.detectors import (
     detect_region_contrast_anomalies,
     detect_uniform_content,
 )
+from src.detectors.led.feature_extractor import FeatureExtractor
+from src.detectors.led.module_grid import calibrate_grid
 from src.detectors.led.panel_finder import find_led_panel
 from src.detectors.led.scoring import calculate_score
+from src.detectors.led.spatial_analyzer import SpatialAnalyzer
 from src.detectors.led.types import LEDAnomaly, LEDPanelInfo
 
 
@@ -328,9 +332,17 @@ class LEDAnalyzer(BaseDetector):
 
         led_mask = refine_led_mask(gray, hsv, panel_mask)
 
+        # Content classification for adaptive thresholds
+        from src.detectors.led.content_classifier import ContentClassifier
+        classifier = ContentClassifier()
+        content_type, content_confidence = classifier.classify(gray, hsv, led_mask)
+        thresholds = classifier.get_adaptive_thresholds(content_type)
+
         anomalies: List[LEDAnomaly] = []
         anomalies.extend(detect_blocking(gray, panel, led_mask, panel_mask))
-        anomalies.extend(detect_flat_content(gray, panel, led_mask))
+        anomalies.extend(
+            detect_flat_content(gray, panel, led_mask, panel_mask, hsv)
+        )
         anomalies.extend(detect_line_defects(gray, panel, led_mask))
         anomalies.extend(
             detect_dead_blocks_in_mask(gray, panel, led_mask)
@@ -350,9 +362,9 @@ class LEDAnalyzer(BaseDetector):
         anomalies.extend(
             detect_uniform_content(gray, hsv, panel, led_mask)
         )
-        # NEW: Region-based contrast comparison
+        # NEW: Region-based contrast comparison (MAD-based)
         anomalies.extend(
-            detect_region_contrast_anomalies(gray, panel, led_mask)
+            detect_region_contrast_anomalies(gray, panel, led_mask, panel_mask)
         )
         # NEW: Module error detection (glitchy/corrupted sections)
         anomalies.extend(
