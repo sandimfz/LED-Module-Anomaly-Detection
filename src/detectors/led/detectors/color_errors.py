@@ -116,10 +116,10 @@ def detect_color_errors_in_mask(
             n_hue_median = float(np.median(n_hues))
             diff = abs(stat["hue"] - n_hue_median)
             circ_diff = min(diff, 180.0 - diff)
-            # 55° threshold avoids false positives on normal content
-            # (green≈70 vs brown≈25 = 45° diff, which is normal)
-            # Actual module errors typically show >70° hue shift.
-            if circ_diff > 55:
+            # 70° threshold avoids false positives on normal ad content
+            # (white text vs blue bg = ~70-80°, which is normal design)
+            # Actual module errors typically show >80° hue shift.
+            if circ_diff > 70:
                 hue_shift = True
 
         if sat_drop or hue_shift:
