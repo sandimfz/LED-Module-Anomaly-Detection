@@ -6,7 +6,7 @@ This approach is more robust than absolute thresholds because it
 adapts to varying content brightness.
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -17,22 +17,24 @@ def detect_region_contrast_anomalies(
     gray: np.ndarray,
     panel: LEDPanelInfo,
     led_mask: np.ndarray,
+    panel_mask: Optional[np.ndarray] = None,
     grid_size: int = 8,
     contrast_threshold: float = 2.5,
-    min_region_cells: int = 2,
+    min_region_cells: int = 6,
 ) -> List[LEDAnomaly]:
     """Detect anomalies using region-based contrast comparison.
 
     Divides LED panel into grid cells and compares each cell
-    with its neighbors. Cells significantly different from
-    neighbors are flagged as anomalies.
+    with its neighbors using robust MAD-based z-score.
+    Uses panel_mask as base to include white flat blocks.
 
     Args:
         gray: Grayscale LED region.
         panel: LED panel information.
         led_mask: Binary mask of LED content.
+        panel_mask: Binary mask of panel area (preferred base).
         grid_size: Number of grid rows/columns.
-        contrast_threshold: Multiplier of neighbor std for threshold.
+        contrast_threshold: Multiplier of neighbor MAD for threshold.
         min_region_cells: Minimum adjacent cells to form a region.
 
     Returns:
@@ -44,15 +46,14 @@ def detect_region_contrast_anomalies(
     if h < grid_size * 2 or w < grid_size * 2:
         return []
 
+    base_mask = panel_mask if panel_mask is not None else led_mask
     cell_h, cell_w = h // grid_size, w // grid_size
 
     # Calculate brightness for each cell
-    cell_stats = _compute_cell_stats(gray, led_mask, grid_size, cell_h, cell_w)
+    cell_stats = _compute_cell_stats(gray, base_mask, grid_size, cell_h, cell_w)
 
     # Find cells that are significantly different from neighbors
-    anomalous_cells = _find_anomalous_cells(
-        cell_stats, grid_size, contrast_threshold
-    )
+    anomalous_cells = _find_anomalous_cells(cell_stats, grid_size)
 
     if not anomalous_cells:
         return []
@@ -134,14 +135,19 @@ def _compute_cell_stats(
 def _find_anomalous_cells(
     cell_stats: List[Dict],
     grid_size: int,
-    contrast_threshold: float,
 ) -> List[Tuple[int, int]]:
-    """Find cells that are significantly different from neighbors.
+    """Find cells significantly different from neighbors.
+
+    Uses robust MAD-based z-score instead of absolute threshold.
+    Old code used max(std*2.5, 35) which killed signals when
+    neighbor std was small (diff 28 vs threshold 35 -> skip).
+
+    New: MAD is robust to outlier neighbors, and z > 3.0 catches
+    cells that decorrelate from local context.
 
     Args:
         cell_stats: List of cell statistics.
         grid_size: Number of grid rows/columns.
-        contrast_threshold: Multiplier for threshold.
 
     Returns:
         List of (row, col) tuples for anomalous cells.
@@ -161,24 +167,21 @@ def _find_anomalous_cells(
         if len(valid_neighbors) < 2:
             continue
 
-        neighbor_means = [n["mean"] for n in valid_neighbors]
-        neighbor_mean = np.mean(neighbor_means)
-        neighbor_std = np.std(neighbor_means) if len(neighbor_means) > 1 else 10.0
+        neighbor_means = np.array([n["mean"] for n in valid_neighbors])
+        neighbor_median = float(np.median(neighbor_means))
 
-        # Ensure minimum std
-        neighbor_std = max(neighbor_std, 10.0)
+        # Robust spread using MAD (Median Absolute Deviation)
+        mad = float(np.median(np.abs(neighbor_means - neighbor_median)))
+        # Convert MAD to equivalent std (MAD * 1.4826 ~ std for normal dist)
+        robust_std = max(mad * 1.4826, 5.0)  # eps=5 to avoid div/0
 
-        # Calculate threshold based on neighbor statistics
-        # Use higher of relative threshold or absolute threshold
-        # to avoid false positives on normal content variation.
-        # Absolute threshold of 35 prevents flagging cells that are
-        # simply darker/brighter due to normal content (soccer vs text).
-        threshold = max(neighbor_std * contrast_threshold, 35.0)
+        # Z-score: how many robust-stds away from neighbor median
+        z_score = abs(cell["mean"] - neighbor_median) / robust_std
 
-        # Check if cell is significantly different
-        diff = abs(cell["mean"] - neighbor_mean)
-
-        if diff > threshold:
+        # Threshold: z > 4.5 catches significant decorrelation
+        # 4.5 is strict to avoid flagging normal ad content
+        # (dark sections of ads, text blocks, etc.)
+        if z_score > 4.5:
             anomalous.append((r, c))
 
     return anomalous

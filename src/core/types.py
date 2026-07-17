@@ -34,6 +34,9 @@ class LocationConfig:
     name: str
     grid_rows: int = 12
     grid_cols: int = 16
+    # Module grid: physical LED module layout (cabinet grid)
+    module_rows: int = 12
+    module_cols: int = 16
     min_frames: int = 3
     frozen_threshold: float = -2.5
     dead_brightness_threshold: float = 25.0

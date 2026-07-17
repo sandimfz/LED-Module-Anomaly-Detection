@@ -22,6 +22,7 @@ from src.core.types import (
 from src.detectors.dark_spot import DarkSpotDetector
 from src.detectors.grid import GridDetector
 from src.detectors.patchcore import PatchCoreDetector
+from src.detectors.led.temporal_correlation import TemporalCorrelationAnalyzer
 from src.detectors.temporal import TemporalDetector
 
 
@@ -31,16 +32,18 @@ class EnsemblePipeline:
     Strategi:
     - GridDetector: Cepat, butuh 1 frame
     - DarkSpotDetector: Deteksi modul mati kecil
-    - TemporalDetector: Akurat untuk videotron, butuh multiple frames
+    - TemporalAnalyzer: Deteksi frozen/stuck dengan multiple frames
     - PatchCoreDetector: Generalisasi ke jenis kerusakan baru
+    - AnomalyDetector: ML-based anomaly detection (Isolation Forest)
 
     Attributes:
         location: Nama lokasi.
         config: Konfigurasi lokasi.
         use_grid: Gunakan grid detector.
         use_dark_spot: Gunakan dark spot detector.
-        use_temporal: Gunakan temporal detector.
+        use_temporal: Gunakan temporal analyzer.
         use_patchcore: Gunakan patchcore detector.
+        use_anomaly_detector: Gunakan ML anomaly detector.
     """
 
     def __init__(
@@ -50,6 +53,7 @@ class EnsemblePipeline:
         use_dark_spot: bool = True,
         use_temporal: bool = True,
         use_patchcore: bool = False,
+        use_anomaly_detector: bool = True,
     ) -> None:
         """Initialize ensemble pipeline.
 
@@ -59,6 +63,7 @@ class EnsemblePipeline:
             use_dark_spot: Aktifkan dark spot detector.
             use_temporal: Aktifkan temporal detector.
             use_patchcore: Aktifkan patchcore detector.
+            use_anomaly_detector: Aktifkan ML anomaly detector.
         """
         self.location = location
         self.config = Config.get_location_config(location)
@@ -66,12 +71,15 @@ class EnsemblePipeline:
         self.use_dark_spot = use_dark_spot
         self.use_temporal = use_temporal
         self.use_patchcore = use_patchcore
+        self.use_anomaly_detector = use_anomaly_detector
 
         # Lazy init detectors
         self._grid: Optional[GridDetector] = None
         self._dark_spot: Optional[DarkSpotDetector] = None
         self._temporal: Optional[TemporalDetector] = None
         self._patchcore: Optional[PatchCoreDetector] = None
+        self._anomaly_detector = None
+        self._temporal_analyzer = None
 
     @property
     def grid_detector(self) -> GridDetector:
@@ -100,6 +108,30 @@ class EnsemblePipeline:
         if self._patchcore is None:
             self._patchcore = PatchCoreDetector(self.config)
         return self._patchcore
+
+    @property
+    def anomaly_detector(self):
+        """ML Anomaly detector (lazy init)."""
+        if self._anomaly_detector is None:
+            from src.detectors.led.anomaly_detector import AnomalyDetector
+            self._anomaly_detector = AnomalyDetector()
+            self._anomaly_detector.load_model(self.location)
+        return self._anomaly_detector
+
+    @property
+    def temporal_analyzer(self):
+        """Temporal analyzer (lazy init)."""
+        if self._temporal_analyzer is None:
+            from src.detectors.led.temporal_analyzer import TemporalAnalyzer
+            self._temporal_analyzer = TemporalAnalyzer()
+        return self._temporal_analyzer
+
+    @property
+    def temporal_correlation(self):
+        """Temporal correlation analyzer (lazy init)."""
+        if not hasattr(self, '_temporal_corr'):
+            self._temporal_corr = TemporalCorrelationAnalyzer()
+        return self._temporal_corr
 
     def _crop_to_screen(self, image: np.ndarray) -> np.ndarray:
         """Crop gambar ke area screen LED menggunakan perspective transform.
@@ -267,6 +299,19 @@ class EnsemblePipeline:
                     level=AnomalyLevel.NORMAL,
                     message=f"PatchCore tidak tersedia: {e}",
                 )
+
+        # ML Anomaly Detector (Isolation Forest)
+        if self.use_anomaly_detector and self.anomaly_detector.is_available:
+            results["anomaly_detector"] = self.anomaly_detector.predict(
+                image, image_path
+            )
+
+        # Temporal Analyzer (frozen/stuck detection)
+        if self.use_temporal:
+            # Add frame to temporal buffer
+            self.temporal_analyzer.add_frame(self.location, image)
+            # Analyze temporal patterns
+            results["temporal"] = self.temporal_analyzer.analyze(self.location)
 
         # Re-annotate on full original image jika crop dilakukan
         if self._M_inv is not None:
@@ -487,6 +532,26 @@ class EnsemblePipeline:
                 frames[-1], frame_paths[-1]
             )
 
+        # Temporal correlation: per-module signal vs global
+        if self.use_temporal and len(frames) >= 3:
+            import cv2
+            for frame in frames:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                from src.detectors.led.content_mask import refine_led_mask
+                panel_mask = np.ones(gray.shape, dtype=np.uint8)
+                led_mask = refine_led_mask(gray, hsv, panel_mask)
+                self.temporal_correlation.add_frame(
+                    self.location, gray, hsv, panel_mask,
+                    rows=self.config.module_rows,
+                    cols=self.config.module_cols,
+                )
+            results["temporal_corr"] = self.temporal_correlation.analyze(
+                self.location,
+                rows=self.config.module_rows,
+                cols=self.config.module_cols,
+            )
+
         # PatchCore: analisis frame terakhir
         if self.use_patchcore and frames:
             try:
@@ -523,14 +588,19 @@ class EnsemblePipeline:
                 message="Tidak ada hasil deteksi.",
             )
 
-        # Weighted average — LED Analyzer dominan (0.6) karena paling akurat.
+        # Weighted average — LED Analyzer dominan (0.50) karena paling akurat.
+        # Temporal analyzer penting untuk deteksi frozen/stuck.
+        # Temporal correlation: per-module signal vs global (anti FP).
         # Grid & dark_spot sebagai pelengkap untuk catching hal yg terlewat.
+        # Anomaly detector (ML) sebagai validator tambahan.
         weights = {
-            "led_analyzer": 0.6,
-            "dark_spot": 0.15,
-            "grid": 0.1,
-            "temporal": 0.1,
-            "patchcore": 0.05,
+            "led_analyzer": 0.45,
+            "temporal": 0.15,
+            "temporal_corr": 0.20,  # Kunci anti FP: modul vs konten global
+            "dark_spot": 0.08,
+            "grid": 0.07,
+            "patchcore": 0.03,
+            "anomaly_detector": 0.02,
         }
 
         weighted_score = 0.0
