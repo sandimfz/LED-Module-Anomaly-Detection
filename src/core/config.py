@@ -49,11 +49,12 @@ class Config:
                 module_rows=12,
                 module_cols=16,
                 # Format: TL, TR, BR, BL — untuk resolusi 1920x1080
+                # Dikalibrasi ulang 2026-07-17
                 screen_points=[
-                    [624, 102],    # Top-Left
-                    [1832, 32],    # Top-Right
-                    [1761, 544],   # Bottom-Right
-                    [786, 1012],   # Bottom-Left
+                    [648, 122],    # Top-Left
+                    [1811, 42],    # Top-Right
+                    [1748, 546],   # Bottom-Right
+                    [847, 1065],   # Bottom-Left
                 ],
                 screen_resolution="1920x1080",
             ),
@@ -89,11 +90,12 @@ class Config:
                 module_rows=12,
                 module_cols=16,
                 # Format: TL, TR, BR, BL — untuk resolusi 1280x720
+                # Dikalibrasi ulang 2026-07-17
                 screen_points=[
-                    [977, 1],      # Top-Left
-                    [926, 719],    # Top-Right
-                    [135, 391],    # Bottom-Right
-                    [60, 27],      # Bottom-Left
+                    [52, 44],      # Top-Left
+                    [943, 2],      # Top-Right
+                    [904, 705],    # Bottom-Right
+                    [148, 386],    # Bottom-Left
                 ],
                 screen_resolution="1280x720",
             ),

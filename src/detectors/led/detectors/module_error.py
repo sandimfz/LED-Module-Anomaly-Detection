@@ -23,6 +23,8 @@ def detect_module_errors(
     led_mask: np.ndarray,
     grid_size: int = 16,
     chaos_threshold: float = 0.75,
+    flat_stuck_std_threshold: float = 5.0,
+    flat_stuck_neighbor_threshold: float = 25.0,
 ) -> List[LEDAnomaly]:
     """Detect module error anomalies.
 
@@ -51,7 +53,9 @@ def detect_module_errors(
 
     # Analyze each cell for module error patterns
     cell_chaos_scores = _compute_chaos_scores(
-        gray, hsv, led_mask, grid_size, cell_h, cell_w
+        gray, hsv, led_mask, grid_size, cell_h, cell_w,
+        flat_stuck_std_threshold=flat_stuck_std_threshold,
+        flat_stuck_neighbor_threshold=flat_stuck_neighbor_threshold,
     )
 
     # Find cells with high chaos scores
@@ -86,13 +90,15 @@ def _compute_chaos_scores(
     grid_size: int,
     cell_h: int,
     cell_w: int,
+    flat_stuck_std_threshold: float = 5.0,
+    flat_stuck_neighbor_threshold: float = 25.0,
 ) -> List[float]:
     """Compute chaos score for each grid cell.
 
     Two parallel detection signals:
     1. Chaos score: random color variations, corrupted rows (existing)
-    2. Flat stuck score: cell is flat (std<5) but neighbors are varied
-       → module is stuck/dead while surrounding content changes
+    2. Flat stuck score: cell is flat (std < threshold) but neighbors
+       are varied → module is stuck/dead while surrounding content changes
 
     Final score per cell = max(chaos_score, flat_stuck_score).
 
@@ -103,6 +109,8 @@ def _compute_chaos_scores(
         grid_size: Number of grid cells.
         cell_h: Cell height.
         cell_w: Cell width.
+        flat_stuck_std_threshold: Max std for cell to be "flat".
+        flat_stuck_neighbor_threshold: Min neighbor avg std to trigger.
 
     Returns:
         List of combined scores for each cell.
@@ -156,10 +164,10 @@ def _compute_chaos_scores(
             chaos = _calculate_cell_chaos(cell_gray, cell_hsv_cell, cell_mask)
 
             # --- Signal 2: flat stuck score (new) ---
-            # Cell is flat (std < 5) BUT neighbors have high variance
+            # Cell is flat (std < threshold) BUT neighbors have high variance
             # → module is stuck while surrounding content is active
             flat_stuck = 0.0
-            if stat["std"] < 5.0:
+            if stat["std"] < flat_stuck_std_threshold:
                 # Get neighbor stats (8-connected)
                 neighbor_stds = []
                 for dr in [-1, 0, 1]:
@@ -174,10 +182,8 @@ def _compute_chaos_scores(
 
                 if neighbor_stds:
                     avg_neighbor_std = float(np.mean(neighbor_stds))
-                    # Neighbors must have HIGH variance (truly active content)
-                    # 25+ means neighbors are colorful/varied, not just dark bg
-                    if avg_neighbor_std > 25.0:
-                        flat_stuck = 0.5
+                    if avg_neighbor_std > flat_stuck_neighbor_threshold:
+                        flat_stuck = 0.8
 
             # Combined: take the stronger signal
             scores.append(max(chaos, flat_stuck))

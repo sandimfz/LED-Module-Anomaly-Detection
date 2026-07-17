@@ -27,8 +27,9 @@ class ClickState:
 
 def mouse_callback(event, x, y, flags, state):
     if event == cv2.EVENT_LBUTTONDOWN and len(state.points) < 4:
+        # Offset 50px untuk info bar di atas
         orig_x = int(x / state.scale)
-        orig_y = int(y / state.scale)
+        orig_y = int((y - 50) / state.scale)
         state.points.append([orig_x, orig_y])
         print(f"  [{len(state.points)}/4] ({orig_x}, {orig_y})")
 
@@ -46,46 +47,55 @@ def calibrate_image(image_path: str) -> list:
     display = cv2.resize(img, (int(w_orig * scale), int(h_orig * scale)))
     disp_h, disp_w = display.shape[:2]
 
+    # Tambah 50px di atas untuk info bar
+    bar_height = 50
+    canvas_h = disp_h + bar_height
+    canvas_w = disp_w
+
     state = ClickState()
     state.scale = scale
 
     cv2.namedWindow(win, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(win, disp_w, disp_h)
+    cv2.resizeWindow(win, canvas_w, canvas_h)
     cv2.setMouseCallback(win, mouse_callback, state)
 
     labels = ["TL", "TR", "BR", "BL"]
 
     while True:
-        show = display.copy()
+        # Canvas: info bar di atas + gambar di bawah
+        canvas = np.zeros((canvas_h, canvas_w, 3), dtype=np.uint8)
+        canvas[bar_height:bar_height + disp_h, :disp_w] = display.copy()
 
-        # Titik
+        # Titik (offset +bar_height)
         for i, p in enumerate(state.points):
-            sx, sy = int(p[0] * scale), int(p[1] * scale)
-            cv2.circle(show, (sx, sy), 8, (0, 0, 255), -1)
-            cv2.circle(show, (sx, sy), 10, (255, 255, 255), 2)
-            cv2.putText(show, labels[i], (sx + 15, sy - 10),
+            sx = int(p[0] * scale)
+            sy = int(p[1] * scale) + bar_height
+            cv2.circle(canvas, (sx, sy), 8, (0, 0, 255), -1)
+            cv2.circle(canvas, (sx, sy), 10, (255, 255, 255), 2)
+            cv2.putText(canvas, labels[i], (sx + 15, sy - 10),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        # Garis
+        # Garis (offset +bar_height)
         for i in range(len(state.points) - 1):
-            p1 = (int(state.points[i][0] * scale), int(state.points[i][1] * scale))
-            p2 = (int(state.points[i+1][0] * scale), int(state.points[i+1][1] * scale))
-            cv2.line(show, p1, p2, (0, 255, 0), 2)
+            p1 = (int(state.points[i][0] * scale), int(state.points[i][1] * scale) + bar_height)
+            p2 = (int(state.points[i+1][0] * scale), int(state.points[i+1][1] * scale) + bar_height)
+            cv2.line(canvas, p1, p2, (0, 255, 0), 2)
 
-        # Tutup polygon
+        # Tutup polygon (offset +bar_height)
         if len(state.points) == 4:
             pts_s = (np.array(state.points) * scale).astype(np.int32)
-            cv2.polylines(show, [pts_s], True, (0, 255, 0), 2)
+            pts_s[:, 1] += bar_height
+            cv2.polylines(canvas, [pts_s], True, (0, 255, 0), 2)
 
         # Info bar
-        cv2.rectangle(show, (0, 0), (disp_w, 50), (0, 0, 0), -1)
+        cv2.rectangle(canvas, (0, 0), (canvas_w, bar_height), (0, 0, 0), -1)
         if len(state.points) < 4:
             txt = f"Klik {labels[len(state.points)]} ({len(state.points)+1}/4)"
         else:
             txt = "y=TERIMA  r=RESET  q=SKIP"
-        cv2.putText(show, txt, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+        cv2.putText(canvas, txt, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
 
-        cv2.imshow(win, show)
+        cv2.imshow(win, canvas)
         key = cv2.waitKey(30) & 0xFF
 
         if key == 27:  # ESC

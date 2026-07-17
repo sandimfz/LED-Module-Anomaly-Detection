@@ -43,6 +43,11 @@ class LocationConfig:
     dark_delta_threshold: float = 40.0
     flat_ratio_threshold: float = 0.35
     color_hue_delta_threshold: float = 35.0
+    # Flat stuck detection: per-lokasi override
+    # std threshold untuk cell dianggap "flat" (default 5.0)
+    flat_stuck_std_threshold: float = 5.0
+    # minimum neighbor avg std untuk trigger flat_stuck (default 25.0)
+    flat_stuck_neighbor_threshold: float = 25.0
     # 4 titik corner LED screen untuk perspective transform
     # Format: [[x,y], [x,y], [x,y], [x,y]] = TL, TR, BR, BL
     # Resolusi referensi harus sesuai dengan gambar asli

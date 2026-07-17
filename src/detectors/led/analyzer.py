@@ -368,7 +368,11 @@ class LEDAnalyzer(BaseDetector):
         )
         # NEW: Module error detection (glitchy/corrupted sections)
         anomalies.extend(
-            detect_module_errors(gray, hsv, panel, led_mask)
+            detect_module_errors(
+                gray, hsv, panel, led_mask,
+                flat_stuck_std_threshold=self.config.flat_stuck_std_threshold,
+                flat_stuck_neighbor_threshold=self.config.flat_stuck_neighbor_threshold,
+            )
         )
 
         return anomalies
