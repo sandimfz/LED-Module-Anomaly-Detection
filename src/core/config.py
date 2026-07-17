@@ -63,13 +63,13 @@ class Config:
                 grid_cols=16,
                 module_rows=12,
                 module_cols=16,
-                # 4 titik corner LED screen untuk perspective transform
+                # 4 titik corner LED screen — dikalibrasi ulang 2026-07-17
                 # Format: TL, TR, BR, BL — untuk resolusi 1280x720
                 screen_points=[
-                    [313, 240],   # Top-Left
-                    [1079, 169],  # Top-Right
-                    [1008, 448],  # Bottom-Right
-                    [422, 700],   # Bottom-Left
+                    [349, 258],   # Top-Left
+                    [1046, 190],  # Top-Right
+                    [988, 434],   # Bottom-Right
+                    [441, 666],   # Bottom-Left
                 ],
                 screen_resolution="1280x720",
                 # Screen points untuk resolusi berbeda (kalibrasi manual)
