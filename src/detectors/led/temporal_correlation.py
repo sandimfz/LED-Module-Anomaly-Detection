@@ -82,11 +82,12 @@ class TemporalCorrelationAnalyzer:
         extractor = FeatureExtractor(gray, hsv, panel_mask, grid)
         features = extractor.extract()
 
-        # Store relative brightness per module
+        # Store RAW brightness per module (not relative)
+        # Correlation needs raw values: module brightness vs global brightness
         module_data = {}
         for (r, c), feat in features.items():
             if feat.valid:
-                module_data[(r, c)] = feat.brightness  # relative to global
+                module_data[(r, c)] = feat.brightness_abs  # raw, not relative
 
         self.brightness_buffers[location].append(module_data)
         self.global_buffers[location].append(extractor.get_global_signal())
@@ -139,6 +140,11 @@ class TemporalCorrelationAnalyzer:
         global_signal = np.array(global_frames[:n_frames])
         global_std = float(np.std(global_signal))
 
+        # If global signal is stable (low variance), content is NOT changing
+        # → don't flag any modules as decorrelated
+        # Only analyze when global_std > 5 (content is actually rotating)
+        content_changing = global_std > 5.0
+
         for module in all_modules:
             # Build signal for this module across frames
             signal = []
@@ -166,12 +172,23 @@ class TemporalCorrelationAnalyzer:
                 # Can't compute correlation (no variation)
                 module_corrs[module] = 0.0 if is_frozen else 0.5
 
-        # Count anomalies
-        low_corr_count = sum(
-            1 for c in module_corrs.values()
-            if c < self.corr_threshold_low
-        )
-        frozen_count = sum(1 for f in module_frozen.values() if f)
+        # Count anomalies — only if content is actually changing
+        # A module is anomalous if:
+        # 1. It's truly FROZEN (low variance) while panel changes, OR
+        # 2. It's decorrelated AND has low variance (not just white text staying same)
+        if content_changing:
+            frozen_count = sum(1 for f in module_frozen.values() if f)
+            # Decorrelated + low variance = stuck module (not just white text)
+            low_corr_count = 0
+            for module in all_modules:
+                if module_corrs.get(module, 0.5) < self.corr_threshold_low:
+                    # Check if module variance is low (truly stuck, not just stable content)
+                    if module_stds.get(module, 0) < 10:  # low variance = stuck
+                        low_corr_count += 1
+        else:
+            # Content is stable → don't flag decorrelated modules
+            low_corr_count = 0
+            frozen_count = 0
         total_modules = len(all_modules)
 
         # Score based on anomaly ratio

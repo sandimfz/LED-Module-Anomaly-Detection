@@ -569,9 +569,10 @@ class EnsemblePipeline:
     ) -> DetectionResult:
         """Gabungkan hasil dari multiple detectors.
 
-        Strategi:
-        - Weighted average dengan dark_spot sebagai detector utama
-        - dark_spot=0.4, grid=0.3, temporal=0.2, patchcore=0.1
+        Consensus voting:
+        - WARNING: minimal 2 detector agree (score > 0.3)
+        - CRITICAL: ≥2 detector agree DAN max_score > 0.7
+        - Single detector → level di bawahnya (low-confidence)
 
         Args:
             results: Dict hasil dari tiap detector.
@@ -588,15 +589,10 @@ class EnsemblePipeline:
                 message="Tidak ada hasil deteksi.",
             )
 
-        # Weighted average — LED Analyzer dominan (0.50) karena paling akurat.
-        # Temporal analyzer penting untuk deteksi frozen/stuck.
-        # Temporal correlation: per-module signal vs global (anti FP).
-        # Grid & dark_spot sebagai pelengkap untuk catching hal yg terlewat.
-        # Anomaly detector (ML) sebagai validator tambahan.
         weights = {
             "led_analyzer": 0.45,
             "temporal": 0.15,
-            "temporal_corr": 0.20,  # Kunci anti FP: modul vs konten global
+            "temporal_corr": 0.20,
             "dark_spot": 0.08,
             "grid": 0.07,
             "patchcore": 0.03,
@@ -609,7 +605,11 @@ class EnsemblePipeline:
         messages: List[str] = []
         heatmap_path: Optional[str] = None
         max_score = 0.0
-        has_critical = False
+
+        # Count detectors with significant signal
+        warning_detectors = 0  # score > 0.3
+        critical_detectors = 0  # score > 0.7
+        active_detectors = 0  # score > 0.01
 
         for name, result in results.items():
             weight = weights.get(name, 0.3)
@@ -617,15 +617,18 @@ class EnsemblePipeline:
             messages.append(f"[{name.upper()}] {result.message}")
             if result.heatmap_path:
                 heatmap_path = result.heatmap_path
-            # Track max score and critical status
+
             if result.anomaly_score > max_score:
                 max_score = result.anomaly_score
-            if result.level == AnomalyLevel.CRITICAL:
-                has_critical = True
 
-            # Skip detectors with score ~0 agar tidak mengencerkan hasil.
-            # Detector yang tidak mendeteksi apapun tidak boleh
-            # menurunkan kontribusi detector lain yang berhasil.
+            if result.anomaly_score > 0.01:
+                active_detectors += 1
+            if result.anomaly_score > 0.3:
+                warning_detectors += 1
+            if result.anomaly_score > 0.7:
+                critical_detectors += 1
+
+            # Skip detectors with score ~0
             if result.anomaly_score < 0.01:
                 continue
 
@@ -634,43 +637,37 @@ class EnsemblePipeline:
 
         final_score = weighted_score / total_weight if total_weight > 0 else 0.0
 
-        # Max-score strategy: hanya boost jika score sangat tinggi (>0.7)
-        # dan ada multiple detectors yang setuju (untuk avoid false positive
-        # dari 1 detector yang salah detect).
-        critical_count = sum(
-            1 for r in results.values()
-            if r.level == AnomalyLevel.CRITICAL
-        )
+        # Consensus-based escalation:
+        # Single detector alone → cap at WARNING (low-confidence)
+        # ≥2 detectors agree → allow WARNING
+        # ≥2 detectors agree + max > 0.7 → allow CRITICAL
+        if warning_detectors >= 2 and max_score > 0.55:
+            # Multiple detectors agree → final_score as-is
+            pass
+        elif warning_detectors == 1 and final_score >= 0.30:
+            # Single detector → cap at low WARNING
+            final_score = min(final_score, 0.35)
+        elif warning_detectors >= 2:
+            # Multiple agree but max_score low → still WARNING
+            pass
 
-        if max_score > 0.7 and critical_count >= 2:
-            final_score = max(final_score, max_score * 0.70)
-
-        # LED Analyzer boost hanya jika score tinggi (>0.6) dan
-        # ada detector lain yang juga detect (untuk avoid false positive).
-        la_score = results.get("led_analyzer", None)
-        if (
-            la_score
-            and la_score.anomaly_score > 0.6
-            and critical_count >= 2
-        ):
-            final_score = max(final_score, la_score.anomaly_score * 0.75)
-
-        # Determine level
-        if final_score >= 0.55:
+        # Determine level with consensus
+        if critical_detectors >= 2 and max_score > 0.7:
             final_level = AnomalyLevel.CRITICAL
-        elif final_score >= 0.30:
+        elif warning_detectors >= 2 and final_score >= 0.30:
+            final_level = AnomalyLevel.WARNING
+        elif warning_detectors == 1 and final_score >= 0.35:
+            # Single detector high score → WARNING but lower confidence
             final_level = AnomalyLevel.WARNING
         else:
             final_level = AnomalyLevel.NORMAL
 
-        # Deduplicate flagged cells
-        unique_flagged = list(set(all_flagged))
-
-        # Hanya force CRITICAL jika ≥2 detectors agree (bukan cuma 1).
-        # Ini mencegah false positive dari single detector yang salah detect.
-        if has_critical and final_level != AnomalyLevel.CRITICAL:
-            if critical_count >= 2 and final_score >= 0.40:
+        # Force CRITICAL: ≥2 detectors + max > 0.7 (existing rule)
+        if final_level != AnomalyLevel.CRITICAL:
+            if critical_detectors >= 2 and max_score > 0.7:
                 final_level = AnomalyLevel.CRITICAL
+
+        unique_flagged = list(set(all_flagged))
 
         return DetectionResult(
             location=self.location,

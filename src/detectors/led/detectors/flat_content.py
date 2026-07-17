@@ -18,11 +18,12 @@ def detect_flat_content(
     led_mask: np.ndarray,
     panel_mask: Optional[np.ndarray] = None,
     hsv: Optional[np.ndarray] = None,
+    baseline_median: Optional[float] = None,
 ) -> List[LEDAnomaly]:
     """Detect flat or blank content regions.
 
-    Original detection logic: block 64px, var < 15, mean thresholds.
-    Now uses panel_mask as fallback for white flat blocks.
+    Uses adaptive thresholds from baseline when available.
+    Falls back to absolute thresholds if baseline not ready.
 
     Args:
         gray: Grayscale LED region.
@@ -30,6 +31,7 @@ def detect_flat_content(
         led_mask: Binary mask of LED content.
         panel_mask: Binary mask of panel area (preferred base).
         hsv: HSV image (unused, kept for API compat).
+        baseline_median: Rolling median brightness from baseline (optional).
 
     Returns:
         List of detected flat content anomalies.
@@ -58,7 +60,15 @@ def detect_flat_content(
             block_var = float(np.var(block))
             block_mean = float(np.mean(block))
 
-            is_blank_white = block_var < 15.0 and block_mean > 200
+            # Adaptive thresholds: use baseline if available
+            if baseline_median is not None and baseline_median > 0:
+                # Relative: flat white = significantly brighter than baseline median
+                white_threshold = baseline_median + 30
+                is_blank_white = block_var < 15.0 and block_mean > white_threshold
+            else:
+                # Fallback: absolute threshold
+                is_blank_white = block_var < 15.0 and block_mean > 200
+
             is_blank_black = block_var < 15.0 and block_mean < 15
             is_abnormal_flat = (
                 block_var < 5.0 and block_mean > panel_mean * 1.5

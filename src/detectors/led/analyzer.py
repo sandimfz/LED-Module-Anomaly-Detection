@@ -35,6 +35,7 @@ from src.detectors.led.detectors import (
 )
 from src.detectors.led.feature_extractor import FeatureExtractor
 from src.detectors.led.module_grid import calibrate_grid
+from src.detectors.led.baseline_store import BaselineStore
 from src.detectors.led.panel_finder import find_led_panel
 from src.detectors.led.scoring import calculate_score
 from src.detectors.led.spatial_analyzer import SpatialAnalyzer
@@ -69,6 +70,7 @@ class LEDAnalyzer(BaseDetector):
         self.min_panel_area = min_panel_area
         self.edge_threshold = edge_threshold
         self.blocking_threshold = blocking_threshold
+        self._baseline = BaselineStore(config.name)
 
     def detect(
         self,
@@ -109,6 +111,10 @@ class LEDAnalyzer(BaseDetector):
         score = calculate_score(anomalies, led_panel)
         annotated = annotate_image(image, led_panel, anomalies)
         status = self._determine_level(score)
+
+        # Update baseline with this frame's brightness (only if NORMAL)
+        self._baseline.update(mean_brightness, status)
+
         output_path = self.get_output_path(
             image_path, "led_analysis", status
         )
@@ -340,8 +346,12 @@ class LEDAnalyzer(BaseDetector):
 
         anomalies: List[LEDAnomaly] = []
         anomalies.extend(detect_blocking(gray, panel, led_mask, panel_mask))
+        # Get baseline median for adaptive flat_content threshold
+        baseline_stats = self._baseline.get_stats()
+        baseline_median = baseline_stats["median"] if baseline_stats else None
+
         anomalies.extend(
-            detect_flat_content(gray, panel, led_mask, panel_mask, hsv)
+            detect_flat_content(gray, panel, led_mask, panel_mask, hsv, baseline_median)
         )
         anomalies.extend(detect_line_defects(gray, panel, led_mask))
         anomalies.extend(
@@ -350,9 +360,12 @@ class LEDAnalyzer(BaseDetector):
         anomalies.extend(
             detect_dark_regions_by_local_contrast(gray, panel, led_mask)
         )
-        anomalies.extend(
-            detect_color_errors_in_mask(hsv, panel, led_mask)
-        )
+        # Content-aware suppression: skip color_errors on solid-color ads
+        # (white text on solid bg = normal, not color defect)
+        if content_type not in ("solid_color", "dark_screen"):
+            anomalies.extend(
+                detect_color_errors_in_mask(hsv, panel, led_mask)
+            )
         # pixel_chaos disabled — produces too many false positives on
         # normal colourful content (night shots, vivid ads).
         # anomalies.extend(detect_pixel_chaos(...))
