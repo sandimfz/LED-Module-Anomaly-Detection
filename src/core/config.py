@@ -98,6 +98,10 @@ class Config:
                     [148, 386],    # Bottom-Left
                 ],
                 screen_resolution="1280x720",
+                # Paskal punya konten flat alami (iklan solid color)
+                # Threshold lebih ketat untuk kurangi FP
+                flat_stuck_std_threshold=3.5,
+                flat_stuck_neighbor_threshold=30.0,
             ),
         }
         return configs.get(location, cls.DEFAULT_LOCATION)
