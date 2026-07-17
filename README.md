@@ -295,11 +295,13 @@ Perbaikan untuk mengurangi false positive pada gambar normal:
 1. **Single image analysis** tidak bisa bedakan frozen/stuck dari normal uniform content
 2. **Moiré patterns** dari kamera masih bisa trigger false positives
 3. **Edge cases** dengan content sangat uniform (soccer field) masih bisa terdeteksi sebagai WARNING
+4. **Color cast global** (seluruh panel bergeser warna) terdeteksi secara insidental lewat color_errors lokal, bukan mekanisme dedicated. Risiko: cast yang sangat homogen (tanpa variasi lokal tajam) berpotensi lolos tanpa terdeteksi. Heuristik kandidat: `hue_std > 30 AND sat_mean > 60` — belum diuji terhadap full dataset.
 
 ### Planned Improvements (v2.3)
 
 1. **Temporal Analysis** - Bandingkan multiple frames untuk detect frozen/stuck
 2. **Content Classification** - Classify content type (soccer, text, ad) untuk adaptive thresholds
 3. **Location Profiling** - Baseline normal per lokasi
+4. **Color Cast Detection** - Dedicated global hue analysis (candidate: hue_std > 30 AND sat_mean > 60). Prioritas rendah — uji FP rate terhadap 165 good images sebelum implementasi.
 
 ## Development
